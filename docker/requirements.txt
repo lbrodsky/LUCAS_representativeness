@@ -1,0 +1,8 @@
+python-dateutil
+numpy
+pyyaml
+joblib
+dask
+pandas
+geopandas
+shapely==2.0.2
