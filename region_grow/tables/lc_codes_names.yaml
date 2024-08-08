@@ -1,13 +1,13 @@
-1: 'roofed built-up'
-2: 'artificial non-built-up'
-3: 'cropland'   # 4
-4: 'permanent'  # 5
-5: 'woodland'   # 6
-6: 'shrubland'  # 7
-7: 'grassland'  # 8
-8: 'bare'       # 9
-9: 'water'      # 10
-10: 'glacier'   # 11
-11: 'wetlands'  # 12
-13: 'others'
+1: 'artifical land '# 'roofed built-up'
+2: 'cropland' # 'artificial non-built-up'
+3: 'permanent'   # 4
+4: 'woodland' # 'permanent'  # 5
+5: '-' # 'woodland'   # 6
+6: '-' # 'shrubland'  # 7
+7: 'shrubland'  # 'grassland'  # 8
+8: 'grassland' # 'bare'       # 9
+9: 'bare' # 'water'      # 10
+10: 'water' # 'glacier'   # 11
+11: 'glacier' # 'wetlands'  # 12
+12: 'wetlands'
 # 3: 'other artificial'
