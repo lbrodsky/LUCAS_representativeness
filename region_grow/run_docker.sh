@@ -29,7 +29,7 @@ rg=region_grow_${country}
 
 docker run --rm  \
   --user $UID \
-  -v /home/brodsky/src/ctu-geoharmonizer/land-cover/lucas/representativeness/region_grow/:/home/region_grow \
+  -v /home/brodsky/src/LUCAS_representativeness/region_grow/:/home/region_grow \
   -v /data/geoharmonizer/lucas/representativeness/osm2018/$osm/merged_osm_clcplus:/data/representativeness/osm2018/$osm/merged_osm_clcplus/ \
   -v /data/geoharmonizer/lucas/representativeness/LUCAS_points/:/data/representativeness/LUCAS_points \
   -v /data/geoharmonizer/lucas/representativeness/Region_Grow/$rg:/data/representativeness/Region_Grow/$rg \
@@ -40,14 +40,11 @@ docker run --rm  \
   --lucas_thr_points /data/representativeness/LUCAS_points/eu_lucas_points_thr.gpkg \
   --shp_thr 0.7 --region_max_size 100 \
   --workers 20 \
-  -tdir /home/region_grow/tabels/ \
+  -tdir /home/region_grow/tables/ \
   --dst_dir /data/representativeness/Region_Grow/$rg \
   --log_level debug \
   --connectivity 4 \
   --version ${version} 
-  
-  # &> ./ctu-geoharmonizer/land-cover/lucas/representativeness/region_grow/runs/nohup_eu_rect.out
-  # nohup_${country}_v${version}.out & 
   
 done # country / version loop 
 
