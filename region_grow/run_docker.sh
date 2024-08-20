@@ -11,7 +11,7 @@ countries=('at' 'be' 'bg' 'cy' 'cz' 'de' 'dk' 'ee' 'es' 'fi' 'fr' 'gb' 'gr' 'hr'
 
 for country in ${countries[@]}; do
     # version=${cntrv[$country]}
-    version=31
+    version=32
     echo $country $version
 
 
@@ -38,7 +38,7 @@ docker run --rm  \
   --tiles_dir /data/representativeness/osm2018/$osm/merged_osm_clcplus \
   --lucas_points /data/representativeness/LUCAS_points/${country}_lucas_points_2018.gpkg \
   --lucas_thr_points /data/representativeness/LUCAS_points/eu_lucas_points_thr.gpkg \
-  --shp_thr 0.7 --region_max_size 100 \
+  --shp_thr 0.1 --region_max_size 100 \
   --workers 20 \
   -tdir /home/region_grow/tables/ \
   --dst_dir /data/representativeness/Region_Grow/$rg \

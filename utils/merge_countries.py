@@ -81,8 +81,8 @@ def main(dirs, products, dst_dir):
 if __name__ == "__main__":
 
     
-    path = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow/region_grow_es/v3'
-    dst_dir = 'merge'
+    path = '/data/geoharmonizer/lucas/representativeness/Region_Grow'
+    dst_dir = 'merge_rect07_eu_osmclcplus_v31'
     dirs = glob(os.path.join(path, '*'), recursive=True)
     print(dirs)
 
