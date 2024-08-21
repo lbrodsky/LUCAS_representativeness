@@ -120,16 +120,23 @@ if __name__ == "__main__":
     cfg['grid_size'] = args.grid_size
     # grid_size =  # 10.0
     shp_fn = None
+
     try:
-        shp_fn = glob.glob(os.path.join(cfg['src_path'], '*region_grow_recoded.gpkg'))
-    except:
         shp_fn = glob.glob(os.path.join(cfg['src_path'], '*region_grow.shp'))
+    except:
+        print('No original region grow files avialble.')
+    if shp_fn == []:
+        try:
+            shp_fn = glob.glob(os.path.join(cfg['src_path'], '*region_grow_recoded.gpkg'))
+        except:
+            print('No recodded region grow files.')
 
     if not shp_fn:
         print('RG not available, use COP')
         shp_fn = glob.glob(os.path.join(cfg['src_path'], '*COP_2018.gpkg'))
+
     shp_fn.sort()
     for repre in shp_fn:
-        print(repre)
+        # print(repre)
         main(repre, cfg['dst_path'], cfg['grid_size'])
         
