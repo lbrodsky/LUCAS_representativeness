@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Gridding representativness polygons to sensor spatial resolution, e.g. Sentinel-2 
+# TODO: Docker run
 
 import os 
 import glob
@@ -8,8 +9,6 @@ import argparse
 from shapely.geometry import Polygon
 import numpy as np
 import geopandas as gpd
-import matplotlib.pyplot as plt
-# from shapely import intersection
 import shapely
 from shapely.ops import unary_union
 
