@@ -187,8 +187,8 @@ def create_buffer_mask(geometry, geometry2, gps_prec_val, out_buffer_layer, outp
 
     x1 = geometry.GetX()
     y1 = geometry.GetY()
-    x2 = geometry.GetX()
-    y2 = geometry.GetY()
+    x2 = geometry2.GetX()
+    y2 = geometry2.GetY()
 
     dist = math.dist([x1, y1], [x2, y2])
 
@@ -197,7 +197,12 @@ def create_buffer_mask(geometry, geometry2, gps_prec_val, out_buffer_layer, outp
         azimuth = calculate_azimuth(x2, y2, x1, y1)
         opening_angle = 120
         poly = wedge_buffer((x1, y1), gps_prec_val, azimuth, opening_angle)
-        point_buffer = Polygon(poly)
+        ring = ogr.Geometry(ogr.wkbLinearRing)
+        for p in poly:
+            ring.AddPoint(p[0], p[1])
+        # Create polygon
+        point_buffer = ogr.Geometry(ogr.wkbPolygon)
+        point_buffer.AddGeometry(ring)
     else:
         # Create point buffer
         point_buffer = geometry.Buffer(gps_prec_val)
