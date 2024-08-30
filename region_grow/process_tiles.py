@@ -6,10 +6,12 @@ import joblib
 from joblib import Parallel, delayed 
 import argparse
 import glob
+import math
 import logging
 import numpy as np
 from osgeo import ogr
 from osgeo import osr
+from shapely.geometry import Polygon
 from osgeo import gdal
 gdal.UseExceptions() 
 import multiprocessing
@@ -19,6 +21,11 @@ from read_data import *
 from data_utils import *
 from region_grow import Point, RegionGrow, UrbanGrow
 from representativeness_exceptions import ConfigError, IllegalArgumentError
+
+# constants
+RAD2DEGREE = 180 / math.pi
+DEGREE2RAD = math.pi / 180
+
 
 __version__ = "0.9.5"
 
@@ -111,13 +118,90 @@ def select_LUCAS_points(img_ds, layer):
 
     return layer.GetFeatureCount()
 
+def polar_to_cartesian(centre, angle, radius):
+    x = math.cos(angle) * radius + centre[0]
+    y = math.sin(angle) * radius + centre[1]
+    return (x,y)
 
-def create_buffer_mask(geometry, gps_prec_val, out_buffer_layer, output_fields,
+def make_arc(centre, radius, rad_from_azimuth, rad_to_azimuth, rad_angle_resolution):
+    cartesian = []
+    rad_az = rad_from_azimuth
+    if rad_from_azimuth < rad_to_azimuth:
+        while rad_az < rad_to_azimuth:
+            cartesian.append(polar_to_cartesian(centre, rad_az, radius))
+            rad_az = rad_az + rad_angle_resolution
+    else:
+        while rad_az > rad_to_azimuth:
+            cartesian.append(polar_to_cartesian(centre, rad_az, radius))
+            rad_az = rad_az - rad_angle_resolution
+    cartesian.append(polar_to_cartesian(centre, rad_to_azimuth, radius))
+    return cartesian
+
+def wedge_buffer(centre, radius, azimuth, opening_angle, inner_radius=0, angle_resolution=10):
+    # make Azimuth 0 north
+    azimuth += 90
+    rad_from_azimuth = (azimuth - opening_angle * 0.5) * DEGREE2RAD
+    rad_to_azimuth = (azimuth + opening_angle * 0.5) * DEGREE2RAD
+    rad_angle_res = angle_resolution * DEGREE2RAD
+
+    cartesian_coords = make_arc(centre, radius, rad_from_azimuth, rad_to_azimuth, rad_angle_res)
+
+    if inner_radius <= 0:
+        cartesian_coords.append(centre)
+    else:
+        # Reverse arc at inner radius
+        cartesian_coords += make_arc(centre, inner_radius, rad_to_azimuth, rad_from_azimuth, rad_angle_res)
+
+    # Close ring
+    cartesian_coords.append(cartesian_coords[0])
+    return cartesian_coords
+
+def calculate_azimuth(ax, ay, bx, by):
+    """Computes the bearing in degrees
+
+    dx=Math.abs(x1-x2) and dy=Math.abs(y1-y2)
+    tan(theta) = dx/dy
+
+    Args:
+        ax (int): The x-coordinate of the first point defining a line.
+        ay (int): The y-coordinate of the first point defining a line.
+        bx (int): The x-coordinate of the second point defining a line.
+        by (int): The y-coordinate of the second point defining a line.
+
+    Returns:
+        float: bearing in degrees
+    """
+
+    TWO_PI = math.pi * 2
+    # if (a1 = b1 and a2 = b2) throw an error
+    theta = math.atan2(bx - ax, ay - by)
+    if (theta < 0.0):
+        theta += TWO_PI
+    return math.degrees(theta)
+
+
+def create_buffer_mask(geometry, geometry2, gps_prec_val, out_buffer_layer, output_fields,
                        tile_shape, srs, geo_transform):
     """Create buffer around LUCAS point geometry and convert it into raster / NumPy array.
     """
-    # CREATE BUFFER VECTOR
-    point_buffer = geometry.Buffer(gps_prec_val)
+
+    x1 = geometry.GetX()
+    y1 = geometry.GetY()
+    x2 = geometry.GetX()
+    y2 = geometry.GetY()
+
+    dist = math.dist([x1, y1], [x2, y2])
+
+    if dist >= gps_prec_val:
+        # Create wedge vector
+        azimuth = calculate_azimuth(x2, y2, x1, y1)
+        opening_angle = 120
+        poly = wedge_buffer((x1, y1), gps_prec_val, azimuth, opening_angle)
+        point_buffer = Polygon(poly)
+    else:
+        # Create point buffer
+        point_buffer = geometry.Buffer(gps_prec_val)
+
     buf_feature = ogr.Feature(out_buffer_layer.GetLayerDefn())
     buf_layer_defn = out_buffer_layer.GetLayerDefn()
     for field, value in output_fields.items():
@@ -309,7 +393,7 @@ def get_urban_region(lucas_osm_code, osm_code, patch):
     return None
 
 
-def get_repre_data(t, geometry, gps_prec_val, outputs, output_fields, tile_img, srs, geo_transform, point_id,
+def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields, tile_img, srs, geo_transform, point_id,
                    lc_mappings, lc1, region_max_size, pixel_size, shp_thr, threshold, connectivity,
                    obs_direct, max_multiplier):
     """Calcualte representartiveness and related data
@@ -321,7 +405,7 @@ def get_repre_data(t, geometry, gps_prec_val, outputs, output_fields, tile_img, 
     x_lucas = geometry.GetX()
     y_lucas = geometry.GetY()
     # Create buffer around LUCAS point based on GPS presision
-    buffer_mask = create_buffer_mask(geometry, gps_prec_val, outputs['points_buffer']['ds_layer'], output_fields,
+    buffer_mask = create_buffer_mask(geometry, geometry2, gps_prec_val, outputs['points_buffer']['ds_layer'], output_fields,
                                      tile_img.shape, srs, geo_transform)
 
     # Read OSM codes (10, 20, ..., 100) within the buffer area
@@ -425,7 +509,7 @@ def get_repre_data(t, geometry, gps_prec_val, outputs, output_fields, tile_img, 
 
             # continue with updated buffer size
             prec_multiplier += 1
-            buffer_mask = create_buffer_mask(geometry, prec_multiplier * gps_prec_val,
+            buffer_mask = create_buffer_mask(geometry, geometry2, prec_multiplier * gps_prec_val,
                                              outputs['points_buffer']['ds_layer'],
                                              output_fields,
                                              tile_img.shape, srs, geo_transform)
@@ -452,13 +536,12 @@ def process_single_tile(config):
     # Unpack configuration parameters
     t = config[0]
     lucas_fn = config[1]
-    # new
     lucas_thr_fn = config[2]
     output_dir = config[3]
     selected_points = config[4]
     lc_mappings = config[5]
     region_max_size = config[6].region_max_size
-    threshold = 1 # OSM land cover is coded with step 1
+    threshold = 1 # OSM land cover is coded with integers
     shp_thr = config[6].shp_thr
     connectivity = config[6].connectivity
     max_multiplier = config[6].multiplier
@@ -530,22 +613,28 @@ def process_single_tile(config):
             'tile_id': os.path.basename(t)
         }
 
-        ### NEW CODE ###
         # Get LUCAS  geometry: 0 .. none, 1 .. measured, 2 .. theoretical
         geometry_type = 0
         # type insitu, office
-        # print(obs_type, obs_dist, gps_prec_val)
         gps_prec_val_updated = max(gps_prec_val, geo_transform[1])
         # obs_type: 1 In situ < 100 m | obs_dist in meters,
         # obs_type: 7 In Office PI
         # OUT: and obs_dist < 2 * gps_prec_val
         repre_data = None
+        # measured geometry
         geometry = feature.GetGeometryRef()
+        # theoretical geometry
+        lucas_thr_layer.ResetReading()
+        lucas_thr_layer.SetAttributeFilter(f"point_id = {point_id}")
+        thr_feature = lucas_thr_layer.GetNextFeature()
+        lucas_thr_layer.SetAttributeFilter("")
+        geometry_thr = thr_feature.GetGeometryRef()
+
         if obs_type == 1 and (obs_dist is not None and obs_dist < 100) and geometry is not None:
             # take GPS measured
             geometry_type = 1
             # geometry = feature.GetGeometryRef()
-            repre_data = get_repre_data(t, geometry, gps_prec_val_updated, outputs, output_fields, tile_img, srs, geo_transform, point_id,
+            repre_data = get_repre_data(t, geometry, geometry_thr, gps_prec_val_updated, outputs, output_fields, tile_img, srs, geo_transform, point_id,
                    lc_mappings, lc1, region_max_size, pixel_size, shp_thr, threshold, connectivity,
                    obs_direct, max_multiplier)
 
@@ -553,25 +642,16 @@ def process_single_tile(config):
         elif (obs_dist is not None and obs_dist <= 2000.0) or (obs_type == 7): 
             # take theoretical point geometry
             geometry_type = 2
-            lucas_thr_layer.ResetReading() 
-            lucas_thr_layer.SetAttributeFilter(f"point_id = {point_id}")
-            # print(f"point_id = {point_id}") 
-            # print(lucas_thr_layer.GetFeatureCount()) 
-            # print(lucas_thr_ds.GetName()) 
-            thr_feature = lucas_thr_layer.GetNextFeature()
-            lucas_thr_layer.SetAttributeFilter("") 
-            # point_id_thr = str(int(thr_feature.GetField('point_id')))
-            # try:
-            geometry_thr = thr_feature.GetGeometryRef()
+            #
             logging.debug(f'Reading geometry from theoretical points, ID: {thr_feature.GetField("point_id")} ')
             # theretical coords fall on edge of pixels -> increase gps prec val
-            repre_data = get_repre_data(t, geometry_thr, gps_prec_val_updated, outputs, output_fields, tile_img, srs, geo_transform, point_id, lc_mappings, lc1, region_max_size, pixel_size, shp_thr, threshold, connectivity,obs_direct, max_multiplier)
+            repre_data = get_repre_data(t, geometry_thr, geometry, gps_prec_val_updated, outputs, output_fields, tile_img, srs, geo_transform, point_id, lc_mappings, lc1, region_max_size, pixel_size, shp_thr, threshold, connectivity,obs_direct, max_multiplier)
             # except:
             # logging.debug(f'No feature in thr layer, point_id: {point_id}')
             # obs_type 3: In situ PI
             if obs_type == 3 and geometry is not None and (repre_data is not None and repre_data['max_similarity'] != 2):
                 repre_data_tmp = repre_data
-                repre_data = get_repre_data(t, geometry, gps_prec_val_updated, outputs, output_fields, tile_img, srs,
+                repre_data = get_repre_data(t, geometry, geometry_thr, gps_prec_val_updated, outputs, output_fields, tile_img, srs,
                                             geo_transform, point_id,
                                             lc_mappings, lc1, region_max_size, pixel_size, shp_thr, threshold,
                                             connectivity,
