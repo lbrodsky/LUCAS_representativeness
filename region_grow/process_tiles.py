@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# Usage:
+
 import os
 import time
 import joblib 
@@ -28,7 +30,6 @@ __version__ = "0.9.5"
 # Log: Joblib/Dask paralelization test
 # Log: 'asymetrical patch coords correction'
 
-# TODO: multiplier > 1 effect?
 # TODO: logging information review
 
 def init_logging(dst_dir, args):
@@ -64,7 +65,21 @@ def init_logging(dst_dir, args):
 def prepare_inputs(args):
     """Prepare variables for input tiles, point filter and translation tables.
     """
-    tiles = glob.glob(args.tiles_dir + '/*.tif')
+    if args.selected_tiles is not None:
+        tiles = []
+        tiles_to_process = args.selected_tiles.split(',')
+        # print(tiles_to_process)
+
+        for tile in tiles_to_process:
+            print(tile)
+            print(glob.glob(args.tiles_dir + f'/*{tile}.tif'))
+            tile_ = glob.glob(args.tiles_dir + f'/*{tile}.tif')
+            if tile_ != []:
+                tiles.append(tile_[0])
+    else:
+        tiles = glob.glob(args.tiles_dir + '/*.tif')
+        print(tiles)
+
     if len(tiles) == 0:
         raise ConfigError(f'No available tiles to process in directory {args.tiles_dir}')
 
@@ -714,6 +729,7 @@ if __name__ == "__main__":
     parser.add_argument('-lt', '--lucas_thr_points', metavar='lucas_thr_points', type=str, help='LUCAS theoretical points.')
     parser.add_argument('-s', '--selected_points', metavar='selected_points', nargs='?', const='', type=str,
                         help='List of selected points to be processed.')
+    parser.add_argument('-st', '--selected_tiles', type=str, help='List of selected tiles to be processed.')
     parser.add_argument('-c', '--shp_thr', metavar='shp_thr', type=float, nargs='?', const=0.7,
                         help='Region grow shape threshold.')
     parser.add_argument('-max', '--region_max_size', metavar='region_max_size', type=int, nargs='?', const=200,
