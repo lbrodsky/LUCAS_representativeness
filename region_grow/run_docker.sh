@@ -11,7 +11,7 @@ countries=('at' 'be' 'bg' 'cy' 'cz' 'de' 'dk' 'ee' 'es' 'fi' 'fr' 'gb' 'gr' 'hr'
 
 for country in ${countries[@]}; do
     # version=${cntrv[$country]}
-    version=34
+    version=35
     echo $country $version
 
 
@@ -43,7 +43,7 @@ docker run --rm  \
   -tdir /home/region_grow/tables/ \
   --dst_dir /data/representativeness/Region_Grow/$rg \
   --log_level debug \
-  --connectivity 4 \
+  --connectivity 8 \
   --version ${version} 
   
 done # country / version loop 
