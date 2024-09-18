@@ -38,6 +38,7 @@ class RegionGrow(object):
         self.threshold_shape = threshold_shape
         self.connectivity = con
 
+
     @staticmethod
     def check_parameters(con, threshold_shape):
         """Check the reasonability of parameters.
