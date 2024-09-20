@@ -4,8 +4,8 @@
 # Example usage:
 """
 python3 ./utils/country_repre_stats.py \
-    -s /media/lukas/image2/LUCAS_representativenes/Land_Cover/lucas/merge_rect07_eu_osmclcplus_v31 \
-    -d /media/lukas/image2/LUCAS_representativenes/Land_Cover/lucas/merge_rect07_eu_osmclcplus_v31/stats
+    -s ./repre_v1 \
+    -d ./repre_v1/stats
 """
 
 import os
@@ -17,6 +17,8 @@ from joblib import Parallel, delayed
 
 def main(dir, dst_path, products):
     """Merge representative areas and other products for all EU countries
+    dir = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow_EU/merge_eu_wedge_rect07_osmclcplus_v35/'
+    dst_path = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow_EU/merge_eu_wedge_rect07_osmclcplus_v35/stats'
     """
     print('Starting stat analysis')
     df = pd.DataFrame(columns=['Country', 'Version', 'No_points',

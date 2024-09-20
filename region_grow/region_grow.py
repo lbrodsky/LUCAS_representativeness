@@ -113,12 +113,10 @@ class RegionGrow(object):
         bb = self.bbox2(img)
         obj2 = np.zeros(img.shape)
 
-        for i in range(bb[0], bb[1] + 1):
-            for j in range(bb[2], bb[3] + 1):
-                obj2[i, j] = 1
+        obj2[bb[0]:bb[1] + 1, bb[2]:bb[3] + 1] = 1
 
         # ratio of region area and the area of a bounding rectangle
-        f_k = np.sum(img) / np.sum(obj2)
+        f_k = np.sum(img==1) / np.sum(obj2)
 
         return f_k
 
