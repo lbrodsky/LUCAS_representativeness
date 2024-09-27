@@ -114,14 +114,16 @@ if __name__ == "__main__":
     cfg = {}
     cfg['src_path'] = args.src_path
     cfg['dst_path'] = args.dst_path
+    # cfg['src_path'] = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow/rectangularity/cz_v33/test'
+    # cfg['dst_path'] = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow/rectangularity/cz_v33/test/Sentinel-2'
 
     # PARAMS
     cfg['grid_size'] = args.grid_size
-    # grid_size =  # 10.0
+    # cfg['grid_size'] =  10.0
     shp_fn = None
 
     try:
-        shp_fn = glob.glob(os.path.join(cfg['src_path'], '*region_grow.shp'))
+        shp_fn = glob.glob(os.path.join(cfg['src_path'], '*region_grow*.shp'))
     except:
         print('No original region grow files avialble.')
     if shp_fn == []:
@@ -137,5 +139,6 @@ if __name__ == "__main__":
     shp_fn.sort()
     for repre in shp_fn:
         # print(repre)
+        # break
         main(repre, cfg['dst_path'], cfg['grid_size'])
         

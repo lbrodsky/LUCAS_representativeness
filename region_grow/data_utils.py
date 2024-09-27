@@ -135,8 +135,14 @@ def get_patch_geo_transform(geo_transform, y_size, x_cell, y_cell, patch_x_size,
     """
     ulx, xres, xskew, uly, yskew, yres = geo_transform
     lry = uly + (y_size * yres) # tile coord
-    ulx_patch = ulx + (x_cell * xres) - ((patch_x_size - 1) * xres / 2)
-    if patch_y_size%2 > 0:
+
+    if patch_x_size % 2 > 0:
+        # -1  ...
+        ulx_patch = ulx + (x_cell * xres) - ((patch_x_size - 1) * xres / 2)
+    else:
+        ulx_patch = ulx + (x_cell * xres) - ((patch_x_size) * xres / 2)
+
+    if patch_y_size % 2 > 0:
         uly_patch = lry + (y_cell * abs(yres)) + ((patch_y_size - 1) * abs(yres) / 2)
     else:
         uly_patch = lry + (y_cell * abs(yres)) + ((patch_y_size) * abs(yres) / 2)
