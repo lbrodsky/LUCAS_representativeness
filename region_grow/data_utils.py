@@ -244,8 +244,9 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
         # rg_feat = out_rg_layer.GetNextFeature()
         rg_feat = convert_polygons2multi(out_rg_layer)
 
-    # overlay rg_geom polygon with geometry of LUCAS point
     rg_geometry = rg_feat.GetGeometryRef()
+
+    # overlay rg_geom polygon with geometry of LUCAS point
     if not lucas_geometry.Within(rg_geometry):
         output_fields["pt_update"] = 1
     else:
@@ -258,8 +259,33 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     for field, value in output_fields.items():
         rg_feat.SetField(field, value)
+
     out_rg_layer.SetFeature(rg_feat)
 
+    # perform shape generalization
+    rg_geometry = rg_geometry.Buffer(-6).Buffer(6)
+    rg_feat.SetGeometry(rg_geometry)
+    out_rg_layer.SetFeature(rg_feat)
+
+    point_id = rg_feat.GetField("point_id")
+    temp_raster.AddBand(gdal.GDT_Byte)
+    temp_raster.GetRasterBand(2).WriteArray(np.zeros(grown_point.shape))
+    arr = temp_raster.GetRasterBand(2).ReadAsArray()
+    #gdal.RasterizeLayer(temp_raster, [2], out_rg_layer, burn_values=[1],
+    #                    options=["ALL_TOUCHED=TRUE", f"where='point_id = {point_id}'"])
+    gdal.RasterizeLayer(temp_raster, [2], out_rg_layer, burn_values=[1],
+                        options=[f"where='point_id = {point_id}'"])
+    arr = temp_raster.GetRasterBand(2).ReadAsArray()
+    temp_driver = ogr.GetDriverByName('Memory')
+    temp_ds = temp_driver.CreateDataSource('memory')
+    temp_layer = temp_ds.CreateLayer('temp', geom_type=ogr.wkbPolygon)
+    temp_layer.CreateField(ogr.FieldDefn('Value', ogr.OFTInteger))
+    temp_band2 = temp_raster.GetRasterBand(2)
+    # gdal.Polygonize(temp_band2, temp_band2, temp_layer, 0, ["8CONNECTED=8"], callback=None)
+    gdal.Polygonize(temp_band2, temp_band2, temp_layer, 0, [], callback=None)
+    temp_feat = temp_layer.GetNextFeature()
+    rg_feat.SetGeometry(temp_feat.GetGeometryRef())
+    out_rg_layer.SetFeature(rg_feat)
 
 def get_length_width(geometry):
     """Calculate length and with from region grow
