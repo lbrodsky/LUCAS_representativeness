@@ -5,4 +5,4 @@ joblib
 dask
 pandas
 geopandas
-shapely==2.0.2
+shapely
