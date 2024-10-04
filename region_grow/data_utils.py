@@ -264,7 +264,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     # perform shape generalization
     # rg_geometry = rg_geometry.Buffer(-6, options=["JOIN_STYLE=MITRE"]).Buffer(6)
-    rg_geometry = rg_geometry.Buffer(-6).Buffer(6)
+    rg_geometry = rg_geometry.Buffer(-6).Buffer(5.9)
     rg_feat.SetGeometry(rg_geometry)
     out_rg_layer.SetFeature(rg_feat)
 
@@ -273,7 +273,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     temp_raster.GetRasterBand(2).WriteArray(np.zeros(grown_point.shape))
     arr = temp_raster.GetRasterBand(2).ReadAsArray()
     gdal.RasterizeLayer(temp_raster, [2], out_rg_layer, burn_values=[1],
-                        options=[f"where='point_id = {point_id}'", "ALL_TOUCHED=FALSE"])
+                        options=[f"where='point_id = {point_id}'", "ALL_TOUCHED=TRUE"])
     arr = temp_raster.GetRasterBand(2).ReadAsArray()
     temp_driver = ogr.GetDriverByName('Memory')
     temp_ds = temp_driver.CreateDataSource('memory')
