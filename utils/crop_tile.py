@@ -13,7 +13,8 @@ def open_ds(filename):
 
     return ds, ds.GetLayer()
 
-def crop_tiles(tile_path, lucas_points, lucas_thr_points, selected_points=None):
+def crop_tiles(tile_path, lucas_points, lucas_thr_points,
+               selected_points=None, grow=500):
     ds_lp, lyr_lp = open_ds(lucas_points)
     ds_thr_lp, lyr_thr_lp = open_ds(lucas_thr_points)
 
@@ -35,7 +36,6 @@ def crop_tiles(tile_path, lucas_points, lucas_thr_points, selected_points=None):
         feat_thr = lyr_thr_lp.GetNextFeature()
         geom_thr_lp = feat_thr.GetGeometryRef()
 
-        grow = 500
         # ulx, uly, lrx, lry
         extent = (min(geom_lp.GetX(), geom_thr_lp.GetX()) - grow,
                   max(geom_lp.GetY(), geom_thr_lp.GetY()) + grow,
