@@ -1,6 +1,6 @@
 # LUCAS representativeness
 
-Code to compute LUCAS representativeness regions/
+Code to compute LUCAS representativeness regions.
 
 ## Docker
 
