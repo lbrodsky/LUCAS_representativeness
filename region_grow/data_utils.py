@@ -181,8 +181,12 @@ def convert_polygons2multi(layer):
     return m_feat
 
 
-def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, output_fields, lucas_geometry, urban=False):
+def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, output_fields, lucas_geometry,
+                          shp_generalize_dist,
+                          urban=False):
     """Convert the NumPy grown region into vector.
+
+    :param int shp_generalize_dist: distance for shape generalization
     """
     grown_point = grown_point.astype(np.byte)
     logging.debug(f"Size of RG: {np.sum(grown_point)}")
@@ -264,7 +268,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     # perform shape generalization
     # rg_geometry = rg_geometry.Buffer(-6, options=["JOIN_STYLE=MITRE"]).Buffer(6)
-    rg_geometry = rg_geometry.Buffer(-6).Buffer(5.9)
+    rg_geometry = rg_geometry.Buffer(-shp_generalize_dist).Buffer(shp_generalize_dist-0.1)
     rg_feat.SetGeometry(rg_geometry)
     out_rg_layer.SetFeature(rg_feat)
 

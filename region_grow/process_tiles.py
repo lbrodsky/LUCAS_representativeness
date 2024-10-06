@@ -64,6 +64,7 @@ def init_logging(dst_dir, args):
     logging.info(f'Processing tiles directory: {args.tiles_dir}')
     logging.info(f'Selected point(s): {args.selected_points}')
     logging.info(f'Shape threshold: {args.shp_thr}')
+    logging.info(f'Shape generalization distance: {args.shp_generalize_dist}')
     logging.info(f'Region max. size: {args.region_max_size}')
     # logging.info(f'Sensor: {args.sensor}')
     logging.info(f'Translation and similarity tables: {args.tables_dir}')
@@ -565,6 +566,7 @@ def process_single_tile(config):
     shp_thr = config[6].shp_thr
     connectivity = config[6].connectivity
     max_multiplier = config[6].multiplier
+    shp_generalize_dist = config[6].shp_generalize_dist
 
     # Read OSM raster data
     img_ds = gdal.Open(t)
@@ -725,9 +727,10 @@ def process_single_tile(config):
                                                           patch_x_size, patch_y_size)
             # save vectors based on grown_point numpy array and return the RG geometry
             vectorize_grown_point(repre_data['grown_point'], outputs['region_grow']['ds_layer'], patch_geo_transform,
-                                  img_ds.GetProjectionRef(), output_fields, geometry)
+                                  img_ds.GetProjectionRef(), output_fields, geometry, shp_generalize_dist)
             vectorize_grown_point(repre_data['urban_repre'] if repre_data['urban_repre'] is not None else repre_data['grown_point'], outputs['urban_grow']['ds_layer'], patch_geo_transform,
-                                  img_ds.GetProjectionRef(), output_fields, geometry, urban=repre_data['urban_repre'] is not None)
+                                  img_ds.GetProjectionRef(), output_fields, geometry, shp_generalize_dist,
+                                  urban=repre_data['urban_repre'] is not None)
 
 
             logging.info(f'POINT ID: {point_id} | multiplier: {repre_data["prec_multiplier"]} | buffer: {repre_data["prec_multiplier"] * gps_prec_val}'
@@ -831,6 +834,8 @@ if __name__ == "__main__":
                         help='Select 4 or 8 neigbouring pixels.')
     parser.add_argument('-m', '--multiplier', metavar='max_multiplier', type=int, default=3,
                         help='Set max multiplier for extending buffer zone around point.')
+    parser.add_argument('-sg', '--shp_generalize_dist', type=int, default=6,
+                        help='Set distance for shape generalization.')
     parser.add_argument('-log_lvl', '--log_level', metavar='log_level', type=str, choices=('info', 'debug'),
                         default='info', help='Logging level.')
 
