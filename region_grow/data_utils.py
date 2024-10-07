@@ -268,7 +268,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     # perform shape generalization
     output_type = '_'.join(out_rg_layer.GetName().split('_')[-2:])
-    if output_fields["ratio"] > shp_generalize_max_ratio:
+    if shp_generalize_dist > 0 and output_fields["ratio"] > shp_generalize_max_ratio:
         logging.debug(f"Performing shape generalization (output={output_type})")
         # rg_geometry = rg_geometry.Buffer(-6, options=["JOIN_STYLE=MITRE"]).Buffer(6)
         rg_geometry = rg_geometry.Buffer(-shp_generalize_dist).Buffer(shp_generalize_dist-0.1)

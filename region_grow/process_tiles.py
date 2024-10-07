@@ -835,7 +835,7 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--multiplier', metavar='max_multiplier', type=int, default=3,
                         help='Set max multiplier for extending buffer zone around point.')
     parser.add_argument('-sg', '--shp_generalize_dist', type=int, default=6,
-                        help='Set distance for shape generalization.')
+                        help='Set distance for shape generalization (<= 0 to disable).')
     parser.add_argument('-log_lvl', '--log_level', metavar='log_level', type=str, choices=('info', 'debug'),
                         default='info', help='Logging level.')
 
