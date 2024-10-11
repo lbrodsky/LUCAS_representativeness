@@ -183,7 +183,7 @@ def convert_polygons2multi(layer):
 
 
 def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, output_fields, lucas_geometry,
-                          shp_generalize_dist, shp_generalize_min_ratio=0.2,
+                          shp_generalize_dist, shp_generalize_min_ratio=0.3,
                           urban=False):
     """Convert the NumPy grown region into vector.
 
