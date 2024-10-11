@@ -713,9 +713,9 @@ def process_single_tile(config):
         # Land Cover
         output_fields["lc"] = repre_data['osm_lc_l1']
         output_fields["similarity"] = repre_data['max_similarity']
-        output_fields["rect"] = round(repre_data['rectangularity'], 3)
-        # pt_update decided based on vectorized geometry in vectorize_grown_point() function
-        # output_fields["pt_update"] = pt_update
+        output_fields["rectangularity"] = round(repre_data['rectangularity'], 3)
+        # point_update decided based on vectorized geometry in vectorize_grown_point() function
+        # output_fields["point_update"] = point_update
 
         # Save outputs:  ['region_grow', 'nomatch_points', 'points_buffer', 'original_points', 'urban_grow']
         if repre_data is not None and  repre_data['grown_point'] is not None:
@@ -733,13 +733,13 @@ def process_single_tile(config):
             logging.info(f'POINT ID: {point_id} | multiplier: {repre_data["prec_multiplier"]} | buffer: {repre_data["prec_multiplier"] * gps_prec_val}'
                          f' | tile: {os.path.basename(t)}')
         else:
-            output_fields["pt_update"] = 0
+            output_fields["point_update"] = 0
             save_point(geometry, outputs['nomatch_points']['ds_layer'], output_fields)
             logging.info(f'POINT ID: {point_id} | nomatch')
 
         save_point(geometry, outputs['original_points']['ds_layer'], output_fields)
         # save LUCAS points with updated geo coordinates
-        if output_fields["pt_update"]:
+        if output_fields["point_update"]:
             # print('Updating LUCAS pt geometry')
             updated_geometry = ogr.Geometry(ogr.wkbPoint)
             updated_geometry.AddPoint(repre_data['x_lucas'], repre_data['y_lucas'])

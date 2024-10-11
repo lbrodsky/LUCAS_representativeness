@@ -66,8 +66,8 @@ def define_fields():
         "gprec_src": ogr.FieldDefn('gprec_src', ogr.OFTString),
         "lc": ogr.FieldDefn('lc', ogr.OFTInteger),
         "similarity": ogr.FieldDefn('similarity', ogr.OFTInteger),
-        "pt_update": ogr.FieldDefn('pt_update', ogr.OFTInteger),
-        "rect": ogr.FieldDefn('rect', ogr.OFTReal),
+        "point_update": ogr.FieldDefn('point_update', ogr.OFTInteger),
+        "rectangularity": ogr.FieldDefn('rectangularity', ogr.OFTReal),
         "length": ogr.FieldDefn('length', ogr.OFTReal),
         "width": ogr.FieldDefn('width', ogr.OFTReal),
         "area": ogr.FieldDefn('area', ogr.OFTReal),
@@ -202,7 +202,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     # vectorize temp raster
     gdal.Polygonize(temp_band, temp_band, out_rg_layer, 0, ["8CONNECTED=8"], callback=None)
 
-    # update fields point_id, lc1_h, uncertain, pt_update
+    # update fields point_id, lc1_h, uncertain, point_update
     logging.debug(
         f"Region Grow multi-polygon feature count: {out_rg_layer.GetFeatureCount()}"
     )
@@ -246,9 +246,9 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     # overlay rg_geom polygon with geometry of LUCAS point
     rg_geometry = rg_feat.GetGeometryRef()
     if not lucas_geometry.Within(rg_geometry):
-        output_fields["pt_update"] = 1
+        output_fields["point_update"] = 1
     else:
-        output_fields["pt_update"] = 0
+        output_fields["point_update"] = 0
 
     # calculate polygon width and length
     output_fields["length"], output_fields["width"] = get_length_width(rg_geometry)
