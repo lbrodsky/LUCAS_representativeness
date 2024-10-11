@@ -1,8 +1,6 @@
-python-dateutil
-numpy
-pyyaml
-joblib
-dask
-pandas
-geopandas
-shapely
+numpy==1.26.4
+pyyaml==6.0.2
+joblib==1.4.2
+pandas==2.2.3
+geopandas==1.0.1
+shapely==2.0.6
