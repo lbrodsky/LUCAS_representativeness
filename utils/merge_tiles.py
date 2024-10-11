@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     
     path = '/data/geoharmonizer/lucas/representativeness/Region_Grow'
-    dst_dir = 'merge_eu_wedge_rect07_osmclcplus_v34' 
+    dst_dir = 'merge_eu_wedge_rect05_osmclcplus_v36' 
     dirs = glob(os.path.join(path, '*'), recursive=True)
     print(dirs)
 
