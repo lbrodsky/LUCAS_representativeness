@@ -298,7 +298,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
         else:
             logging.debug("Empty geometry. Shape generalization skipped")
     else:
-        logging.debug(f"Shape generalization skipped (output={output_type}; ratio {output_fields['ratio']}")
+        logging.debug(f"Shape generalization skipped (output={output_type}; ratio {output_fields['ratio']})")
 
 def get_length_width(geometry):
     """Calculate length and with from region grow
