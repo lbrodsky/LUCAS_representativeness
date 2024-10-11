@@ -76,7 +76,7 @@ def define_fields():
 def create_layer(fn, srs, field_defs):
     """Create new vector layer with attribute definitions.
     """
-    driver = ogr.GetDriverByName('ESRI Shapefile')
+    driver = ogr.GetDriverByName('GPKG')
     vector_path = fn
     out_data = driver.CreateDataSource(vector_path)
     layer_name = os.path.basename(vector_path).split('.')[0]
@@ -99,7 +99,7 @@ def define_outputs(output_dir, tile_id, layers_kw, srs, field_defs):
     outputs = {}
     for layer in layers_kw:
         vector_path = os.path.join(output_dir,
-                                   tile_id + '_lucas_' + layer + '.shp')
+                                   tile_id + '_lucas_' + layer + '.gpkg')
         out_rg_ds, out_rg_layer = create_layer(vector_path, srs, field_defs)
         outputs[layer] = {'ds': out_rg_ds, 'ds_layer': out_rg_layer}
 
