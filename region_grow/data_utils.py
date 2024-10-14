@@ -32,11 +32,11 @@ def create_polygon(extent):
     """Create polygon geometry from coordinates.
     """
     ring = ogr.Geometry(ogr.wkbLinearRing)
-    ring.AddPoint(extent[0], extent[1])
-    ring.AddPoint(extent[0], extent[3])
-    ring.AddPoint(extent[2], extent[3])
-    ring.AddPoint(extent[2], extent[1])
-    ring.AddPoint(extent[0], extent[1])
+    ring.AddPoint_2D(extent[0], extent[1])
+    ring.AddPoint_2D(extent[0], extent[3])
+    ring.AddPoint_2D(extent[2], extent[3])
+    ring.AddPoint_2D(extent[2], extent[1])
+    ring.AddPoint_2D(extent[0], extent[1])
     poly = ogr.Geometry(ogr.wkbPolygon)
     poly.AddGeometry(ring)
 

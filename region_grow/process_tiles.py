@@ -214,7 +214,7 @@ def create_buffer_mask(geometry, geometry2, gps_prec_val, out_buffer_layer, outp
         poly = wedge_buffer((x1, y1), gps_prec_val, azimuth, opening_angle)
         ring = ogr.Geometry(ogr.wkbLinearRing)
         for p in poly:
-            ring.AddPoint(p[0], p[1])
+            ring.AddPoint_2D(p[0], p[1])
         # Create polygon
         point_buffer = ogr.Geometry(ogr.wkbPolygon)
         point_buffer.AddGeometry(ring)
@@ -742,7 +742,7 @@ def process_single_tile(config):
         if output_fields["point_update"]:
             # print('Updating LUCAS pt geometry')
             updated_geometry = ogr.Geometry(ogr.wkbPoint)
-            updated_geometry.AddPoint(repre_data['x_lucas'], repre_data['y_lucas'])
+            updated_geometry.AddPoint_2D(repre_data['x_lucas'], repre_data['y_lucas'])
             save_point(updated_geometry, outputs['updated_points']['ds_layer'], output_fields)
 
         logging.debug(f'Fields: {output_fields}')
