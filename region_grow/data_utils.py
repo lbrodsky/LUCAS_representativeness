@@ -83,7 +83,9 @@ def create_layer(vector_path, layer_name, srs, field_defs):
         out_data = driver.CreateDataSource(vector_path)
     else:
         out_data = ogr.Open(vector_path, update=True) #gdal.OpenEx(vector_path, gdal.OF_VECTOR | gdal.GA_Update)
-    out_layer = out_data.CreateLayer(layer_name, srs, options=["OVERWRITE=YES"])
+    out_layer = out_data.CreateLayer(layer_name,
+                                     geom_type=ogr.wkbPoint if layer_name.endswith("points") else ogr.wkbPolygon,
+                                     srs=srs, options=["OVERWRITE=YES"])
 
     field_exclude = []
     if layer_name not in ('lucas_region_grow', 'sentinel2_region_grow', 'lucas_urban_grow'):
