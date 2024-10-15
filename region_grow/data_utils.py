@@ -263,6 +263,17 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
         rg_feat = convert_polygons2multi(out_rg_layer)
 
     rg_geometry = rg_feat.GetGeometryRef()
+    # make geometry valid
+    if rg_geometry.IsValid() is False:
+        logging.debug("Making geometry valid")
+        rg_geometry = rg_geometry.MakeValid()
+        areas = []
+        for i in range(rg_geometry.GetGeometryCount()):
+            polygon = rg_geometry.GetGeometryRef(i)
+            areas.append(polygon.GetArea())
+        idx = areas.index(max(areas))
+        rg_geometry = rg_geometry.GetGeometryRef(idx)
+        rg_feat.SetGeometry(rg_geometry)
 
     # overlay rg_geom polygon with geometry of LUCAS point
     if not lucas_geometry.Within(rg_geometry):
