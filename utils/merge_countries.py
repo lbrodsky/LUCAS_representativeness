@@ -16,20 +16,24 @@ def feature_count(fn):
 
     return count
 
-def merge_geometries(data_dir, dst_dir, first):
+def create_ds(filename, vector_format="GPKG"):
+    """Create GDAL datasource."""
+    driver = ogr.GetDriverByName(vector_format)
+    if Path(filename).exists():
+        driver.DeleteDataSource(filename)
+    return driver.CreateDataSource(filename)
+
+def merge_geometries(dst_fn, dst_ds_eu, data_dir, first, vector_format="GPKG"):
     """ogr2ogr merge over countries
     """
-    code = os.path.basename(os.path.dirname(data_dir)).split('_')[2]
-    basename = "lucas_representativeness"
-    dst_fn_eu = os.path.join(dst_dir, f"eu_{basename}.gpkg")
-    dst_fn = os.path.join(dst_dir, f"{code}_{basename}.gpkg")
+    print(f'Generating: {dst_fn}')
 
-    print(f'Processing:\n {dst_fn_eu}\n {dst_fn}')
-
-    vector_format = 'GPKG'
     cnt = 0
-    no_points = 0
 
+    # create country-based datasource
+    dst_ds = create_ds(dst_fn)
+
+    # open input data sources
     for pfn in Path(data_dir).glob("*.gpkg"):
         ds = ogr.Open(str(pfn))
         if ds is None:
@@ -40,21 +44,26 @@ def merge_geometries(data_dir, dst_dir, first):
             if count < 1:
                 continue
 
-            gdal.VectorTranslate(dst_fn, ds.GetName(), format=vector_format, layerName=lyr.GetName(),
-                                 accessMode='append' if cnt > 0 else 'overwrite')
-            gdal.VectorTranslate(dst_fn_eu, ds.GetName(), format=vector_format, layerName=lyr.GetName(),
-                                 accessMode='append' if not first else 'overwrite')
+            gdal.VectorTranslate(dst_ds.GetName(), ds.GetName(), format=vector_format, layerName=lyr.GetName())
+#                                 accessMode='append')
+            gdal.VectorTranslate(dst_ds_eu.GetName(), ds.GetName(), format=vector_format, layerName=lyr.GetName())
+#                                 accessMode='append')
             cnt += 1
-            no_points += count
-        ds = None
+        ds.Close()
+
+    dst_ds.Close()
 
 def main(dirs, dst_dir):
     """Merge representative areas and other products for all EU countries
     """
+    basename = "lucas_representativeness"
     print('Starting merge procedure...')
 
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)
+
+    dst_fn_eu = os.path.join(dst_dir, f"eu_{basename}.gpkg")
+    dst_ds_eu = create_ds(dst_fn_eu)
 
     first = True
     for cntr in dirs:
@@ -64,8 +73,15 @@ def main(dirs, dst_dir):
             v_num = int(v.name[1:])
             if v_num > v_max: v_max = v_num
         if v_max > 0:
-            merge_geometries(v.parent / f"v{v_max}", dst_dir, first)
+            src_dir = v.parent / f"v{v_max}"
+            code = os.path.basename(os.path.dirname(src_dir)).split('_')[2]
+            dst_fn = os.path.join(dst_dir, f"{code}_{basename}.gpkg")
+            print(f"Processing {src_dir}...")
+            merge_geometries(dst_fn, dst_ds_eu, src_dir, first)
             first = False
+
+    dst_ds_eu.Close()
+
     print('Done')
 
 if __name__ == "__main__":
