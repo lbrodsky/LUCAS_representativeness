@@ -70,7 +70,8 @@ def define_fields():
         "width": ogr.FieldDefn('width', ogr.OFTReal),
         "area": ogr.FieldDefn('area', ogr.OFTReal),
         "ratio": ogr.FieldDefn('ratio', ogr.OFTReal),
-        "shp_gen": ogr.FieldDefn('shp_gen', ogr.OFTInteger)
+        "shp_gen": ogr.FieldDefn('shp_gen', ogr.OFTInteger),
+        "area_nogen": ogr.FieldDefn('area_nogen', ogr.OFTReal)
     }
 
 
@@ -189,6 +190,18 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     :param int shp_generalize_dist: distance for shape generalization
     """
+    def update_geom_fields(rg_geometry):
+        attrs = {}
+        attrs["length"], attrs["width"] = get_length_width(rg_geometry)
+        attrs["area"] = rg_geometry.GetArea()
+        attrs["ratio"] = attrs["width"] / attrs["length"]
+
+        return attrs
+
+    def update_fields(fields):
+        for field, value in fields.items():
+            rg_feat.SetField(field, value)
+
     grown_point = grown_point.astype(np.byte)
     logging.debug(f"Size of RG: {np.sum(grown_point)}")
 
@@ -258,13 +271,11 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
         output_fields["pt_update"] = 0
 
     # calculate polygon width and length
-    output_fields["length"], output_fields["width"] = get_length_width(rg_geometry)
-    output_fields["area"] = rg_geometry.GetArea()
-    output_fields["ratio"] = output_fields["width"] / output_fields["length"]
+    output_fields.update(update_geom_fields(rg_geometry))
+    output_fields["area_nogen"] = output_fields["area"]
     output_fields["shp_gen"] = 0
 
-    for field, value in output_fields.items():
-        rg_feat.SetField(field, value)
+    update_fields(output_fields)
 
     out_rg_layer.SetFeature(rg_feat)
 
@@ -292,8 +303,11 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
             temp_band2 = temp_raster.GetRasterBand(2)
             gdal.Polygonize(temp_band2, temp_band2, temp_layer, 0, [], callback=None)
             temp_feat = temp_layer.GetNextFeature()
-            rg_feat.SetGeometry(temp_feat.GetGeometryRef())
+            rg_geometry = temp_feat.GetGeometryRef()
+            rg_feat.SetGeometry(rg_geometry)
             rg_feat.SetField("shp_gen", 1)
+            attrs_updated = update_geom_fields(rg_geometry)
+            update_fields(attrs_updated)
             out_rg_layer.SetFeature(rg_feat)
         else:
             logging.debug("Empty geometry. Shape generalization skipped")
