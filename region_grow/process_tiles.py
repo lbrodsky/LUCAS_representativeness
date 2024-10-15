@@ -78,14 +78,14 @@ def prepare_inputs(args):
         # print(tiles_to_process)
 
         for tile in tiles_to_process:
-            print(tile)
-            print(glob.glob(args.tiles_dir + f'/*{tile}.tif'))
+            # print(tile)
+            # print(glob.glob(args.tiles_dir + f'/*{tile}.tif'))
             tile_ = glob.glob(args.tiles_dir + f'/*{tile}.tif')
             if tile_ != []:
                 tiles.append(tile_[0])
     else:
         tiles = glob.glob(args.tiles_dir + '/*.tif')
-        print(tiles)
+        # print(tiles)
 
     if len(tiles) == 0:
         raise ConfigError(f'No available tiles to process in directory {args.tiles_dir}')
