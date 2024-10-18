@@ -70,7 +70,7 @@ def define_fields():
         "width": ogr.FieldDefn('width', ogr.OFTReal),
         "area": ogr.FieldDefn('area', ogr.OFTReal),
         "ratio": ogr.FieldDefn('ratio', ogr.OFTReal),
-        "shp_gen": ogr.FieldDefn('shp_gen', ogr.OFTInteger),
+        "shape_gen": ogr.FieldDefn('shape_gen', ogr.OFTInteger),
         "area_nogen": ogr.FieldDefn('area_nogen', ogr.OFTReal)
     }
 
@@ -284,7 +284,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     # calculate polygon width and length
     output_fields.update(update_geom_fields(rg_geometry))
     output_fields["area_nogen"] = output_fields["area"]
-    output_fields["shp_gen"] = 0
+    output_fields["shape_gen"] = 0
 
     update_fields(output_fields)
 
@@ -294,7 +294,6 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     output_type = '_'.join(out_rg_layer.GetName().split('_')[-2:])
     if shp_generalize_dist > 0 and output_fields["ratio"] > shp_generalize_min_ratio:
         logging.debug(f"Performing shape generalization (output={output_type})")
-        # rg_geometry = rg_geometry.Buffer(-6, options=["JOIN_STYLE=MITRE"]).Buffer(6)
         rg_geometry = rg_geometry.Buffer(-shp_generalize_dist).Buffer(shp_generalize_dist-0.1)
         if not rg_geometry.IsEmpty():
             rg_feat.SetGeometry(rg_geometry)
@@ -316,7 +315,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
             temp_feat = temp_layer.GetNextFeature()
             rg_geometry = temp_feat.GetGeometryRef()
             rg_feat.SetGeometry(rg_geometry)
-            rg_feat.SetField("shp_gen", 1)
+            rg_feat.SetField("shape_gen", 1)
             attrs_updated = update_geom_fields(rg_geometry)
             update_fields(attrs_updated)
             out_rg_layer.SetFeature(rg_feat)
