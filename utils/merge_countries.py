@@ -1,8 +1,10 @@
-#!/usr/bin/env
+#!/usr/bin/env python
 
 import os
-from glob import glob
 import shutil
+import argparse
+from glob import glob
+from pathlib import Path
 
 from osgeo import gdal, ogr
 
@@ -14,81 +16,78 @@ def feature_count(fn):
 
     return count
 
-def merge_geometries(data_dir, dst_dir, prod, first):
+def create_ds(filename, vector_format="GPKG"):
+    """Create GDAL datasource."""
+    driver = ogr.GetDriverByName(vector_format)
+    if Path(filename).exists():
+        driver.DeleteDataSource(filename)
+    return driver.CreateDataSource(filename)
+
+def merge_geometries(dst_fn, dst_ds_eu, data_dir, first, vector_format="GPKG"):
     """ogr2ogr merge over countries
     """
-    code = os.path.basename(os.path.dirname(data_dir)).split('_')[2]
-    tokens = prod.split('_')
-    dst_fn_eu = os.path.join(
-        dst_dir,
-        '_'.join(['eu', tokens[1], tokens[2], tokens[3]]))
-    dst_fn = os.path.join(
-        dst_dir,
-        '_'.join([code, tokens[1], tokens[2], tokens[3]]))
+    print(f'Generating: {dst_fn}')
 
-    print(f'Processing:\n {dst_fn_eu}\n {dst_fn}')
+    # create country-based datasource
+    dst_ds = create_ds(dst_fn)
 
-    flag = ''
-    vector_format = 'ESRI Shapefile'
-    cnt = 0
-    no_points = 0
-    prod_files = glob(os.path.join(data_dir, prod))
-    for pfn in prod_files:
-        no_points += feature_count(pfn)
-        if feature_count(pfn) < 1:
+    # open input data sources
+    for pfn in Path(data_dir).glob("*.gpkg"):
+        ds = ogr.Open(str(pfn))
+        if ds is None:
+            # empty datasource -> no LUCAS points in tile
             continue
+        for lyr in ds:
+            count = lyr.GetFeatureCount()
+            if count < 1:
+                continue
 
-        gdal.VectorTranslate(dst_fn, pfn, format=vector_format,
-                             accessMode='append' if cnt > 0 else 'overwrite')
-        gdal.VectorTranslate(dst_fn_eu, pfn, format=vector_format,
-                             accessMode='append' if not first else 'overwrite')
-        cnt += 1
+            gdal.VectorTranslate(dst_ds.GetName(), ds.GetName(), format=vector_format,
+                                 layers=[lyr.GetName()], accessMode='append')
+            gdal.VectorTranslate(dst_ds_eu.GetName(), ds.GetName(), format=vector_format,
+                                 layers=[lyr.GetName()], accessMode='append')
+        ds = None
 
-    print(f'Numbner of points in layer: {no_points}')
-    if no_points == 0:
-        print(f'Creating empty layer from {os.path.basename(pfn)}')
-        # TODO: copy
-        shutil.copy(pfn, dst_fn)
-        shutil.copy(pfn.replace('.shp', '.dbf'), dst_fn.replace('.shp', '.dbf'))
-        shutil.copy(pfn.replace('.shp', '.shx'), dst_fn.replace('.shp', '.shx'))
-        shutil.copy(pfn.replace('.shp', '.prj'), dst_fn.replace('.shp', '.prj'))
+    dst_ds = None
 
-def main(dirs, products, dst_dir):
+def main(dirs, dst_dir):
     """Merge representative areas and other products for all EU countries
     """
-    print('Starting merge')
+    basename = "lucas_representativeness"
+    print('Starting merge procedure...')
 
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)
 
-    for prod in products:
-        print('---')
-        print(prod)
-        print('---')
-        prod_files = []
-        first = True
-        for cntr in dirs:
-            versions = glob(os.path.join(cntr, 'v*'), recursive=True)
-            v_max = 0
-            for v in versions:
-                v_num = int(v.split('/')[-1][1:])
-                if v_num > v_max: v_max = v_num
-            if v_max > 0:
-                data_dir = versions[0] if len(versions) == 1 else versions[0][:versions[0].rfind('/')+2] + str(v_max)
-                merge_geometries(data_dir, dst_dir, prod, first)
-                first = False
+    dst_fn_eu = os.path.join(dst_dir, f"eu_{basename}.gpkg")
+    dst_ds_eu = create_ds(dst_fn_eu)
+    print(f'Generating: {dst_fn_eu}')
+
+    first = True
+    for cntr in dirs:
+        versions = cntr.glob('v*')
+        v_max = 0
+        for v in versions:
+            v_num = int(v.name[1:])
+            if v_num > v_max: v_max = v_num
+        if v_max > 0:
+            src_dir = v.parent / f"v{v_max}"
+            code = os.path.basename(os.path.dirname(src_dir)).split('_')[2]
+            dst_fn = os.path.join(dst_dir, f"{code}_{basename}.gpkg")
+            print(f"Processing {src_dir}...")
+            merge_geometries(dst_fn, dst_ds_eu, src_dir, first)
+            first = False
+
+    dst_ds_eu = None
+
+    print('Done')
 
 if __name__ == "__main__":
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--directory',
+                        required=True, help="Data directory")
+    parser.add_argument('--target',
+                        required=True, help="Target directory name")
+    args = parser.parse_args()
     
-    path = '/data/geoharmonizer/lucas/representativeness/Region_Grow'
-    dst_dir = 'merge_rect07_eu_osmclcplus_v31'
-    dirs = glob(os.path.join(path, '*'), recursive=True)
-    print(dirs)
-
-    products = ['*_lucas_region_grow.shp', '*_lucas_urban_grow.shp',
-                '*_lucas_updated_points.shp', '*_lucas_points_buffer.shp',
-                '*_lucas_original_points.shp', '*_lucas_nomatch_points.shp']
-
-    main(dirs, products, os.path.join(path, dst_dir))
-
+    main(Path(args.directory).glob("*"), os.path.join(args.directory, args.target))

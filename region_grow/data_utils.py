@@ -3,6 +3,8 @@
 import os
 import copy
 import numpy as np
+from pathlib import Path
+
 from osgeo import ogr
 from osgeo import gdal
 from osgeo import osr
@@ -30,11 +32,11 @@ def create_polygon(extent):
     """Create polygon geometry from coordinates.
     """
     ring = ogr.Geometry(ogr.wkbLinearRing)
-    ring.AddPoint(extent[0], extent[1])
-    ring.AddPoint(extent[0], extent[3])
-    ring.AddPoint(extent[2], extent[3])
-    ring.AddPoint(extent[2], extent[1])
-    ring.AddPoint(extent[0], extent[1])
+    ring.AddPoint_2D(extent[0], extent[1])
+    ring.AddPoint_2D(extent[0], extent[3])
+    ring.AddPoint_2D(extent[2], extent[3])
+    ring.AddPoint_2D(extent[2], extent[1])
+    ring.AddPoint_2D(extent[0], extent[1])
     poly = ogr.Geometry(ogr.wkbPolygon)
     poly.AddGeometry(ring)
 
@@ -64,8 +66,8 @@ def define_fields():
         "gprec_src": ogr.FieldDefn('gprec_src', ogr.OFTString),
         "lc": ogr.FieldDefn('lc', ogr.OFTInteger),
         "similarity": ogr.FieldDefn('similarity', ogr.OFTInteger),
-        "pt_update": ogr.FieldDefn('pt_update', ogr.OFTInteger),
-        "rect": ogr.FieldDefn('rect', ogr.OFTReal),
+        "point_update": ogr.FieldDefn('point_update', ogr.OFTInteger),
+        "rectangularity": ogr.FieldDefn('rectangularity', ogr.OFTReal),
         "length": ogr.FieldDefn('length', ogr.OFTReal),
         "width": ogr.FieldDefn('width', ogr.OFTReal),
         "area": ogr.FieldDefn('area', ogr.OFTReal),
@@ -73,18 +75,20 @@ def define_fields():
     }
 
 
-def create_layer(fn, srs, field_defs):
+def create_layer(vector_path, layer_name, srs, field_defs):
     """Create new vector layer with attribute definitions.
     """
-    driver = ogr.GetDriverByName('ESRI Shapefile')
-    vector_path = fn
-    out_data = driver.CreateDataSource(vector_path)
-    layer_name = os.path.basename(vector_path).split('.')[0]
-    out_layer = out_data.CreateLayer(layer_name, srs)
+    driver = ogr.GetDriverByName('GPKG')
+    if not Path(vector_path).exists():
+        out_data = driver.CreateDataSource(vector_path)
+    else:
+        out_data = ogr.Open(vector_path, update=True) #gdal.OpenEx(vector_path, gdal.OF_VECTOR | gdal.GA_Update)
+    out_layer = out_data.CreateLayer(layer_name,
+                                     geom_type=ogr.wkbPoint if layer_name.endswith("points") else ogr.wkbPolygon,
+                                     srs=srs, options=["OVERWRITE=YES"])
 
     field_exclude = []
-    # '_'.join(layer_name.split('_')[3:])
-    if '_'.join(layer_name.split('_')[-3:]) not in ['lucas_region_grow', 'sentinel2_region_grow', 'lucas_urban_grow']:
+    if layer_name not in ('lucas_region_grow', 'sentinel2_region_grow', 'lucas_urban_grow'):
         field_exclude = ['lc_update_def', 'gprec_src', 'unc', 'pup']
 
     for k, v in field_defs.items():
@@ -99,8 +103,8 @@ def define_outputs(output_dir, tile_id, layers_kw, srs, field_defs):
     outputs = {}
     for layer in layers_kw:
         vector_path = os.path.join(output_dir,
-                                   tile_id + '_lucas_' + layer + '.shp')
-        out_rg_ds, out_rg_layer = create_layer(vector_path, srs, field_defs)
+                                   tile_id + '.gpkg')
+        out_rg_ds, out_rg_layer = create_layer(vector_path, f"lucas_{layer}", srs, field_defs)
         outputs[layer] = {'ds': out_rg_ds, 'ds_layer': out_rg_layer}
 
     return outputs
@@ -112,11 +116,8 @@ def save_outputs(outputs):
     for v in outputs.values():
         driver = name = None
         if v['ds_layer'].GetFeatureCount() < 1:
-            driver = v['ds'].GetDriver()
-            name = v['ds'].GetName()
-        v['ds'] = None
-        if driver:
-            driver.DeleteDataSource(name)
+            v['ds'].DeleteLayer(v['ds_layer'].GetName())
+        v['ds'].Close()
 
 
 def xy_to_array(raster_fn, x_lucas, y_lucas):
@@ -203,7 +204,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     # vectorize temp raster
     gdal.Polygonize(temp_band, temp_band, out_rg_layer, 0, ["8CONNECTED=8"], callback=None)
 
-    # update fields point_id, lc1_h, uncertain, pt_update
+    # update fields point_id, lc1_h, uncertain, point_update
     logging.debug(
         f"Region Grow multi-polygon feature count: {out_rg_layer.GetFeatureCount()}"
     )
@@ -247,9 +248,9 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     # overlay rg_geom polygon with geometry of LUCAS point
     rg_geometry = rg_feat.GetGeometryRef()
     if not lucas_geometry.Within(rg_geometry):
-        output_fields["pt_update"] = 1
+        output_fields["point_update"] = 1
     else:
-        output_fields["pt_update"] = 0
+        output_fields["point_update"] = 0
 
     # calculate polygon width and length
     output_fields["length"], output_fields["width"] = get_length_width(rg_geometry)
