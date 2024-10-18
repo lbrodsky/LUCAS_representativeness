@@ -28,8 +28,6 @@ def merge_geometries(dst_fn, dst_ds_eu, data_dir, first, vector_format="GPKG"):
     """
     print(f'Generating: {dst_fn}')
 
-    cnt = 0
-
     # create country-based datasource
     dst_ds = create_ds(dst_fn)
 
@@ -44,14 +42,13 @@ def merge_geometries(dst_fn, dst_ds_eu, data_dir, first, vector_format="GPKG"):
             if count < 1:
                 continue
 
-            gdal.VectorTranslate(dst_ds.GetName(), ds.GetName(), format=vector_format, layerName=lyr.GetName())
-#                                 accessMode='append')
-            gdal.VectorTranslate(dst_ds_eu.GetName(), ds.GetName(), format=vector_format, layerName=lyr.GetName())
-#                                 accessMode='append')
-            cnt += 1
-        ds.Close()
+            gdal.VectorTranslate(dst_ds.GetName(), ds.GetName(), format=vector_format,
+                                 layers=[lyr.GetName()], accessMode='append')
+            gdal.VectorTranslate(dst_ds_eu.GetName(), ds.GetName(), format=vector_format,
+                                 layers=[lyr.GetName()], accessMode='append')
+        ds = None
 
-    dst_ds.Close()
+    dst_ds = None
 
 def main(dirs, dst_dir):
     """Merge representative areas and other products for all EU countries
@@ -64,6 +61,7 @@ def main(dirs, dst_dir):
 
     dst_fn_eu = os.path.join(dst_dir, f"eu_{basename}.gpkg")
     dst_ds_eu = create_ds(dst_fn_eu)
+    print(f'Generating: {dst_fn_eu}')
 
     first = True
     for cntr in dirs:
@@ -80,7 +78,7 @@ def main(dirs, dst_dir):
             merge_geometries(dst_fn, dst_ds_eu, src_dir, first)
             first = False
 
-    dst_ds_eu.Close()
+    dst_ds_eu = None
 
     print('Done')
 
