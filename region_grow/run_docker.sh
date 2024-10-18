@@ -7,11 +7,11 @@ declare -A cntrv
 
 countries=('at' 'be' 'bg' 'cy' 'cz' 'de' 'dk' 'ee' 'es' 'fi' 'fr' 'gb' 'gr' 'hr' 'hu' 'ie' 'it' 'lt' 'lu' 'lv' 'nl' 'mt' 'pl' 'pt' 'ro' 'se' 'si' 'sk')
 
-# countries=('it')
+# countries=('cz')
 
 for country in ${countries[@]}; do
     # version=${cntrv[$country]}
-    version=38  
+    version=40 
     echo $country $version
 
 
@@ -33,7 +33,7 @@ docker run --rm  \
   -v /data/geoharmonizer/lucas/representativeness/osm2018/$osm/merged_osm_clcplus:/data/representativeness/osm2018/$osm/merged_osm_clcplus/ \
   -v /data/geoharmonizer/lucas/representativeness/LUCAS_points/:/data/representativeness/LUCAS_points \
   -v /data/geoharmonizer/lucas/representativeness/Region_Grow/$rg:/data/representativeness/Region_Grow/$rg \
-  ctu-geoharmonizer:1.3 \
+  lucas_representativeness:latest \
   python3 /home/region_grow/process_tiles.py \
   --tiles_dir /data/representativeness/osm2018/$osm/merged_osm_clcplus \
   --lucas_points /data/representativeness/LUCAS_points/${country}_lucas_points_2018.gpkg \
@@ -41,7 +41,6 @@ docker run --rm  \
   --shp_thr 0.5 --region_max_size 100 \
   --workers 22 \
   -tdir /home/region_grow/tables/ \
-  -sg -1 \
   --dst_dir /data/representativeness/Region_Grow/$rg \
   --log_level debug \
   --version ${version} 
