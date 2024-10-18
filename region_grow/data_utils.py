@@ -71,7 +71,9 @@ def define_fields():
         "length": ogr.FieldDefn('length', ogr.OFTReal),
         "width": ogr.FieldDefn('width', ogr.OFTReal),
         "area": ogr.FieldDefn('area', ogr.OFTReal),
-        "ratio": ogr.FieldDefn('ratio', ogr.OFTReal)
+        "ratio": ogr.FieldDefn('ratio', ogr.OFTReal),
+        "shape_gen": ogr.FieldDefn('shape_gen', ogr.OFTInteger),
+        "area_nogen": ogr.FieldDefn('area_nogen', ogr.OFTReal)
     }
 
 
@@ -182,9 +184,25 @@ def convert_polygons2multi(layer):
     return m_feat
 
 
-def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, output_fields, lucas_geometry, urban=False):
+def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, output_fields, lucas_geometry,
+                          shp_generalize_dist, shp_generalize_min_ratio=0.3,
+                          urban=False):
     """Convert the NumPy grown region into vector.
+
+    :param int shp_generalize_dist: distance for shape generalization
     """
+    def update_geom_fields(rg_geometry):
+        attrs = {}
+        attrs["length"], attrs["width"] = get_length_width(rg_geometry)
+        attrs["area"] = rg_geometry.GetArea()
+        attrs["ratio"] = attrs["width"] / attrs["length"]
+
+        return attrs
+
+    def update_fields(fields):
+        for field, value in fields.items():
+            rg_feat.SetField(field, value)
+
     grown_point = grown_point.astype(np.byte)
     logging.debug(f"Size of RG: {np.sum(grown_point)}")
 
@@ -245,22 +263,67 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
         # rg_feat = out_rg_layer.GetNextFeature()
         rg_feat = convert_polygons2multi(out_rg_layer)
 
-    # overlay rg_geom polygon with geometry of LUCAS point
     rg_geometry = rg_feat.GetGeometryRef()
+    # make geometry valid
+    if rg_geometry.IsValid() is False:
+        logging.debug("Making geometry valid")
+        rg_geometry = rg_geometry.MakeValid()
+        areas = []
+        for i in range(rg_geometry.GetGeometryCount()):
+            polygon = rg_geometry.GetGeometryRef(i)
+            areas.append(polygon.GetArea())
+        idx = areas.index(max(areas))
+        rg_geometry = rg_geometry.GetGeometryRef(idx)
+        rg_feat.SetGeometry(rg_geometry)
+
+    # overlay rg_geom polygon with geometry of LUCAS point
     if not lucas_geometry.Within(rg_geometry):
         output_fields["point_update"] = 1
     else:
         output_fields["point_update"] = 0
 
     # calculate polygon width and length
-    output_fields["length"], output_fields["width"] = get_length_width(rg_geometry)
-    output_fields["area"] = rg_geometry.GetArea()
-    output_fields["ratio"] = output_fields["width"] / output_fields["length"]
+    output_fields.update(update_geom_fields(rg_geometry))
+    output_fields["area_nogen"] = output_fields["area"]
+    output_fields["shape_gen"] = 0
 
-    for field, value in output_fields.items():
-        rg_feat.SetField(field, value)
+    update_fields(output_fields)
+
     out_rg_layer.SetFeature(rg_feat)
 
+    # perform shape generalization
+    output_type = '_'.join(out_rg_layer.GetName().split('_')[-2:])
+    if shp_generalize_dist > 0 and output_fields["ratio"] > shp_generalize_min_ratio:
+        logging.debug(f"Performing shape generalization (output={output_type})")
+        rg_geometry = rg_geometry.Buffer(-shp_generalize_dist).Buffer(shp_generalize_dist-0.1)
+        if not rg_geometry.IsEmpty():
+            rg_feat.SetGeometry(rg_geometry)
+            out_rg_layer.SetFeature(rg_feat)
+
+            point_id = rg_feat.GetField("point_id")
+            temp_raster.AddBand(gdal.GDT_Byte)
+            temp_raster.GetRasterBand(2).WriteArray(np.zeros(grown_point.shape))
+            arr = temp_raster.GetRasterBand(2).ReadAsArray()
+            gdal.RasterizeLayer(temp_raster, [2], out_rg_layer, burn_values=[1],
+                                options=[f"where='point_id = {point_id}'", "ALL_TOUCHED=TRUE"])
+            arr = temp_raster.GetRasterBand(2).ReadAsArray()
+            temp_driver = ogr.GetDriverByName('Memory')
+            temp_ds = temp_driver.CreateDataSource('memory')
+            temp_layer = temp_ds.CreateLayer('temp', geom_type=ogr.wkbPolygon)
+            temp_layer.CreateField(ogr.FieldDefn('Value', ogr.OFTInteger))
+            temp_band2 = temp_raster.GetRasterBand(2)
+            gdal.Polygonize(temp_band2, temp_band2, temp_layer, 0, [], callback=None)
+            temp_feat = temp_layer.GetNextFeature()
+            rg_geometry = temp_feat.GetGeometryRef()
+            rg_feat.SetGeometry(rg_geometry)
+            rg_feat.SetField("shape_gen", 1)
+            attrs_updated = update_geom_fields(rg_geometry)
+            update_fields(attrs_updated)
+            out_rg_layer.SetFeature(rg_feat)
+        else:
+            logging.debug("Empty geometry. Shape generalization skipped")
+    else:
+        logging.debug(f"Shape generalization skipped (output={output_type}; ratio {output_fields['ratio']})")
 
 def get_length_width(geometry):
     """Calculate length and with from region grow
