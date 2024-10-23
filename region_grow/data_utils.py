@@ -184,6 +184,14 @@ def convert_polygons2multi(layer):
 
     return m_feat
 
+def geom_max_area(rg_geometry):
+    """Select geometry part with the largest area."""
+    areas = []
+    for i in range(rg_geometry.GetGeometryCount()):
+        polygon = rg_geometry.GetGeometryRef(i)
+        areas.append(polygon.GetArea())
+    idx = areas.index(max(areas))
+    return rg_geometry.GetGeometryRef(idx)
 
 def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, output_fields, lucas_geometry,
                           shp_generalize_dist, shp_generalize_min_ratio=0.3,
@@ -269,13 +277,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     if rg_geometry.IsValid() is False:
         logging.debug("Making geometry valid")
         rg_geometry = rg_geometry.MakeValid()
-        areas = []
-        for i in range(rg_geometry.GetGeometryCount()):
-            polygon = rg_geometry.GetGeometryRef(i)
-            areas.append(polygon.GetArea())
-        idx = areas.index(max(areas))
-        rg_geometry = rg_geometry.GetGeometryRef(idx)
-        rg_feat.SetGeometry(rg_geometry)
+        rg_feat.SetGeometry(geom_max_area(rg_geometry))
 
     # overlay rg_geom polygon with geometry of LUCAS point
     if not lucas_geometry.Within(rg_geometry):
@@ -318,8 +320,12 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
             temp_layer.CreateField(ogr.FieldDefn('Value', ogr.OFTInteger))
             temp_band2 = temp_raster.GetRasterBand(2)
             gdal.Polygonize(temp_band2, temp_band2, temp_layer, 0, [], callback=None)
-            temp_feat = temp_layer.GetNextFeature()
-            rg_geometry = temp_feat.GetGeometryRef()
+            if temp_layer.GetFeatureCount() > 0:
+                temp_feat = convert_polygons2multi(temp_layer)
+                rg_geometry = geom_max_area(temp_feat.GetGeometryRef())
+            else:
+                logging.debug("No features. Shape generalization skipped")
+
             rg_feat.SetGeometry(rg_geometry)
             rg_feat.SetField("shape_gen", 1)
             attrs_updated = update_geom_fields(rg_geometry)
