@@ -5,8 +5,12 @@ import logging
 import yaml
 import csv
 import pandas as pd
+
 from osgeo import gdal
 from osgeo import ogr
+# avoid Warning 1: Unable to save auxiliary information in...
+gdal.SetConfigOption('GDAL_PAM_ENABLED', 'NO')
+
 from representativeness_exceptions import ConfigError, IllegalArgumentError
 gdal.UseExceptions()
 
@@ -14,7 +18,7 @@ def open_LUCAS_points(lucas_points_fn):
     """Open LUCAS vector file.
     """
     driver = ogr.GetDriverByName('GPKG')
-    vec_ds = driver.Open(lucas_points_fn, 0)
+    vec_ds = driver.Open(lucas_points_fn, update=False)
     lucas_points_basename = os.path.basename(lucas_points_fn)
     if vec_ds is None:
         raise ConfigError(f'Could not open {vec_ds}')
