@@ -331,7 +331,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
                 if temp_count > 1:
                     logging.warning("Multiple rasterized features detected. It seems to be a bug in the code.")
             else:
-                logging.debug("No features. Shape generalization skipped")
+                logging.debug("No rasterized features. Shape generalization skipped")
 
             rg_feat.SetGeometry(rg_geometry)
             rg_feat.SetField("shape_gen", 1)
