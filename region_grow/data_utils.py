@@ -304,6 +304,10 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
         logging.debug(f"Performing shape generalization (output={output_type})")
         rg_geometry = rg_geometry.Buffer(-shp_generalize_dist).Buffer(shp_generalize_dist-0.1)
         if not rg_geometry.IsEmpty():
+            if rg_geometry.GetGeometryType() == ogr.wkbMultiPolygon:
+                logging.debug("Multipolygon detected. The one with largest area selected.")
+                rg_geometry = geom_max_area(rg_geometry)
+
             rg_feat.SetGeometry(rg_geometry)
             out_rg_layer.SetFeature(rg_feat)
 
@@ -320,9 +324,12 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
             temp_layer.CreateField(ogr.FieldDefn('Value', ogr.OFTInteger))
             temp_band2 = temp_raster.GetRasterBand(2)
             gdal.Polygonize(temp_band2, temp_band2, temp_layer, 0, [], callback=None)
-            if temp_layer.GetFeatureCount() > 0:
-                temp_feat = convert_polygons2multi(temp_layer)
-                rg_geometry = geom_max_area(temp_feat.GetGeometryRef())
+            temp_count = temp_layer.GetFeatureCount()
+            if temp_count > 0:
+                temp_feat = temp_layer.GetNextFeature()
+                rg_geometry = temp_feat.GetGeometryRef()
+                if temp_count > 1:
+                    logging.warning("Multiple rasterized features detected. It seems to be a bug in the code.")
             else:
                 logging.debug("No features. Shape generalization skipped")
 
