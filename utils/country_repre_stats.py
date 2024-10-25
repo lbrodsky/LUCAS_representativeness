@@ -17,8 +17,8 @@ from joblib import Parallel, delayed
 
 def main(dir, dst_path, products):
     """Merge representative areas and other products for all EU countries
-    dir = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow_EU/merge_eu_wedge_rect07_osmclcplus_v35/'
-    dst_path = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow_EU/merge_eu_wedge_rect07_osmclcplus_v35/stats'
+    dir = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow_EU/merge_eu_rect05_gen6_v40'
+    dst_path = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow_EU/merge_eu_rect05_gen6_v40/stats'
     """
     print('Starting stat analysis')
     df = pd.DataFrame(columns=['Country', 'Version', 'No_points',
@@ -28,21 +28,30 @@ def main(dir, dst_path, products):
 
     countries = ['at', 'be', 'bg', 'cy', 'cz', 'de', 'dk', 'ee', 'es', 'fi', 'fr', 'gb', 'gr', 'hr', 'hu', 'ie',
                  'it', 'lt', 'lu', 'lv', 'nl', 'mt', 'pl', 'pt', 'ro', 'se', 'si', 'sk']
+    # countries = ['eu']
     v_max = int(os.path.basename(dir).split('_')[-1][1:])
+
+    gpkg_products = ['lucas_region_grow', 'lucas_urban_grow',
+                     'lucas_updated_points', 'lucas_points_buffer',
+                     'lucas_original_points', 'lucas_nomatch_points']
 
     for cntr in countries:
         print(cntr)
         # original points
-        original_points_fn = os.path.join(dir, f'{cntr}_lucas_original_points.shp')
-        df_original_points = gpd.read_file(original_points_fn)
+        # original_points_fn = os.path.join(dir, f'{cntr}_lucas_original_points.gpkg')
+        cntr_fn = os.path.join(dir, f'{cntr}_lucas_representativeness.gpkg')
+        # df_original_points = gpd.read_file(original_points_fn, layer='lucas_original_points')
+        df_original_points = gpd.read_file(cntr_fn, layer='lucas_original_points')
 
         # region grow polygons
-        region_grow_fn = os.path.join(dir, f'{cntr}_lucas_region_grow.shp')
-        df_region_grow = gpd.read_file(region_grow_fn)
+        # region_grow_fn = os.path.join(dir, f'{cntr}_lucas_region_grow.gpkg')
+        # df_region_grow = gpd.read_file(region_grow_fn)
+        df_region_grow = gpd.read_file(cntr_fn, layer='lucas_region_grow')
 
         # no match points
-        nomatch_points_fn = os.path.join(dir, f'{cntr}_lucas_nomatch_points.shp')
-        df_nomatch_points = gpd.read_file(nomatch_points_fn)
+        # nomatch_points_fn = os.path.join(dir, f'{cntr}_lucas_nomatch_points.gpkg')
+        # df_nomatch_points = gpd.read_file(nomatch_points_fn)
+        df_nomatch_points = gpd.read_file(cntr_fn, layer='lucas_nomatch_points')
 
         # ANALYSIS
         # rg / no match points
@@ -57,7 +66,7 @@ def main(dir, dst_path, products):
         print(f'It is {round(number_multiclass / number_points * 100, 2)} %')
 
         # Updated points
-        number_updated_points = (df_region_grow['pt_update'] > 0).sum()
+        number_updated_points = (df_region_grow['point_update'] > 0).sum()
         print(f'There are {number_updated_points} updated points out of {number_points}.')
         print(f'It is {round(number_updated_points / number_points * 100, 2)} %')
 
@@ -112,8 +121,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    products = ['*_lucas_region_grow.shp', '*_lucas_urban_grow.shp',
-                '*_lucas_updated_points.shp', '*_lucas_points_buffer.shp',
-                '*_lucas_original_points.shp', '*_lucas_nomatch_points.shp']
+    # products = ['*_lucas_region_grow.shp', '*_lucas_urban_grow.shp',
+    #             '*_lucas_updated_points.shp', '*_lucas_points_buffer.shp',
+    #             '*_lucas_original_points.shp', '*_lucas_nomatch_points.shp']
+    products = ['*_lucas_region_grow.gpkg']
 
     main(args.src_dir, args.dst_dir, products)
