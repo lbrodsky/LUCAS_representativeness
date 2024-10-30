@@ -34,5 +34,5 @@ Display `geom_nogen` in QGIS:
 
 1. Open Database > DB Manager
 1. Connect GPKG file and open SQL Window
-1. Type `select st_geomfromwkb(geom_nogen, 3035) as geom from lucas_region_grow`
+1. Type `SELECT st_geomfromwkb(geom_nogen, 3035) AS geom FROM lucas_region_grow`
 1. Load as a new layer
