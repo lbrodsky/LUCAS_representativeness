@@ -73,6 +73,7 @@ def define_fields():
         "area": ogr.FieldDefn('area', ogr.OFTReal),
         "ratio": ogr.FieldDefn('ratio', ogr.OFTReal),
         "shape_gen": ogr.FieldDefn('shape_gen', ogr.OFTInteger),
+        "geom_nogen": ogr.FieldDefn('geom_nogen', ogr.OFTBinary),
         "area_nogen": ogr.FieldDefn('area_nogen', ogr.OFTReal)
     }
 
@@ -183,6 +184,14 @@ def convert_polygons2multi(layer):
 
     return m_feat
 
+def geom_max_area(rg_geometry):
+    """Select geometry part with the largest area."""
+    areas = []
+    for i in range(rg_geometry.GetGeometryCount()):
+        polygon = rg_geometry.GetGeometryRef(i)
+        areas.append(polygon.GetArea())
+    idx = areas.index(max(areas))
+    return rg_geometry.GetGeometryRef(idx)
 
 def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, output_fields, lucas_geometry,
                           shp_generalize_dist, shp_generalize_min_ratio=0.3,
@@ -268,13 +277,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     if rg_geometry.IsValid() is False:
         logging.debug("Making geometry valid")
         rg_geometry = rg_geometry.MakeValid()
-        areas = []
-        for i in range(rg_geometry.GetGeometryCount()):
-            polygon = rg_geometry.GetGeometryRef(i)
-            areas.append(polygon.GetArea())
-        idx = areas.index(max(areas))
-        rg_geometry = rg_geometry.GetGeometryRef(idx)
-        rg_feat.SetGeometry(rg_geometry)
+        rg_feat.SetGeometry(geom_max_area(rg_geometry))
 
     # overlay rg_geom polygon with geometry of LUCAS point
     if not lucas_geometry.Within(rg_geometry):
@@ -287,7 +290,11 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
     output_fields["area_nogen"] = output_fields["area"]
     output_fields["shape_gen"] = 0
 
+    # update fields
     update_fields(output_fields)
+
+    # store original geometry
+    rg_feat.SetField('geom_nogen', rg_geometry.ExportToWkb())
 
     out_rg_layer.SetFeature(rg_feat)
 
@@ -297,6 +304,10 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
         logging.debug(f"Performing shape generalization (output={output_type})")
         rg_geometry = rg_geometry.Buffer(-shp_generalize_dist).Buffer(shp_generalize_dist-0.1)
         if not rg_geometry.IsEmpty():
+            if rg_geometry.GetGeometryType() == ogr.wkbMultiPolygon:
+                logging.debug("Multipolygon detected. The one with largest area selected.")
+                rg_geometry = geom_max_area(rg_geometry)
+
             rg_feat.SetGeometry(rg_geometry)
             out_rg_layer.SetFeature(rg_feat)
 
@@ -313,8 +324,15 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
             temp_layer.CreateField(ogr.FieldDefn('Value', ogr.OFTInteger))
             temp_band2 = temp_raster.GetRasterBand(2)
             gdal.Polygonize(temp_band2, temp_band2, temp_layer, 0, [], callback=None)
-            temp_feat = temp_layer.GetNextFeature()
-            rg_geometry = temp_feat.GetGeometryRef()
+            temp_count = temp_layer.GetFeatureCount()
+            if temp_count > 0:
+                temp_feat = temp_layer.GetNextFeature()
+                rg_geometry = temp_feat.GetGeometryRef()
+                if temp_count > 1:
+                    logging.warning("Multiple rasterized features detected. It seems to be a bug in the code.")
+            else:
+                logging.debug("No rasterized features. Shape generalization skipped")
+
             rg_feat.SetGeometry(rg_geometry)
             rg_feat.SetField("shape_gen", 1)
             attrs_updated = update_geom_fields(rg_geometry)

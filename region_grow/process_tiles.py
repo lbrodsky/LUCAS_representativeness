@@ -732,7 +732,6 @@ def process_single_tile(config):
                                   img_ds.GetProjectionRef(), output_fields, geometry, shp_generalize_dist,
                                   urban=repre_data['urban_repre'] is not None)
 
-
             logging.info(f'POINT ID: {point_id} | multiplier: {repre_data["prec_multiplier"]} | buffer: {repre_data["prec_multiplier"] * gps_prec_val}'
                          f' | tile: {os.path.basename(t)}')
         else:
