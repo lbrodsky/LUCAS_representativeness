@@ -15,7 +15,7 @@ import argparse
 from joblib import Parallel, delayed
 
 
-def main(dir, dst_path, products):
+def main(dir, dst_path, version, products):
     """Merge representative areas and other products for all EU countries
     dir = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow_EU/merge_eu_rect05_gen6_v40'
     dst_path = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow_EU/merge_eu_rect05_gen6_v40/stats'
@@ -29,7 +29,7 @@ def main(dir, dst_path, products):
     countries = ['at', 'be', 'bg', 'cy', 'cz', 'de', 'dk', 'ee', 'es', 'fi', 'fr', 'gb', 'gr', 'hr', 'hu', 'ie',
                  'it', 'lt', 'lu', 'lv', 'nl', 'mt', 'pl', 'pt', 'ro', 'se', 'si', 'sk']
     # countries = ['eu']
-    v_max = int(os.path.basename(dir).split('_')[-1][1:])
+    v_max = version # int(os.path.basename(dir).split('_')[-1][1:])
 
     gpkg_products = ['lucas_region_grow', 'lucas_urban_grow',
                      'lucas_updated_points', 'lucas_points_buffer',
@@ -116,6 +116,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--src_dir', type=str, help='Directory with region grow representatrive polygons for countries.')
     parser.add_argument('-d', '--dst_dir', type=str, help='Destination directory for results.')
+    parser.add_argument('-v', '--version', type=str, help='Processed version.')
     parser.add_argument('-w', '--workers', metavar='workers', type=int, default=12,
                         help='Number of workers for parallel CPU processing.')
 
@@ -126,4 +127,4 @@ if __name__ == "__main__":
     #             '*_lucas_original_points.shp', '*_lucas_nomatch_points.shp']
     products = ['*_lucas_region_grow.gpkg']
 
-    main(args.src_dir, args.dst_dir, products)
+    main(args.src_dir, args.dst_dir, args.version, products)
