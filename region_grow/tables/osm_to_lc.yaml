@@ -12,11 +12,11 @@
     30: 3  # 5  # Perenial
     31: 1  # 5  # Greenhouses
     40: 4  # 6  # Woodland
-    41: 7 # 7 # Transitional woodland in LUCAS shurbland
-    50: 7 # 7 Shrubland
-    60: 8 # 8 # Grassland
-    70: 9 # 9 Bare
-    80: 10 # 10 Water
-    90: 12 # 12 Wetlands
-    100: 11 # 11 Glaciers
+    41: 6 # 7 # Transitional woodland in LUCAS shurbland
+    50: 6 # 7 Shrubland
+    60: 7 # 8 # Grassland
+    70: 8 # 9 Bare
+    80: 9 # 10 Water
+    90: 11 # 12 Wetlands
+    100: 10 # 11 Glaciers
     110: 13 # X00 others

@@ -3,11 +3,10 @@
 3: 'permanent'   # 4
 4: 'woodland' # C10 - Broadleaved / 'permanent'  # 5
 5: '-' # C20 - Coniferous / 'woodland'   # 6
-6: '-' # C30 - Mixed / 'shrubland'  # 7
-7: 'shrubland'  # 'grassland'  # 8
-8: 'grassland' # 'bare'       # 9
-9: 'bare' # 'water'      # 10
-10: 'water' # 'glacier'   # 11
-11: 'glacier' # 'wetlands'  # 12
-12: 'wetlands'
+6: 'shrubland'  # 7
+7: 'grassland'  # 8
+8: 'bare'       # 9
+9: 'water'      # 10
+10: 'glacier'   # 11
+11: 'wetlands'  # 12
 # 3: 'other artificial'
