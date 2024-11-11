@@ -122,7 +122,6 @@ def save_outputs(outputs):
             v['ds'].DeleteLayer(v['ds_layer'].GetName())
         v['ds'].Close()
 
-
 def xy_to_array(raster_fn, x_lucas, y_lucas):
     """Find NumPy array indexes based on spatial coordinates.
     """

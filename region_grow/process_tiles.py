@@ -99,7 +99,7 @@ def prepare_inputs(args):
     tables = {
         # 'similarity_fn': os.path.join(args.tables_dir, 'semsim_v2.csv'),
         'similarity_fn': os.path.join(args.tables_dir, 'semsim_l3_v3.csv'),
-        # 'lc1_2_lc_fn': os.path.join(args.tables_dir, 'lucas_lc1_to_lc.yaml'),
+        'lc1_2_lc_fn': os.path.join(args.tables_dir, 'lucas_lc1_to_lc.yaml'),
         'lc1_2_osm_fn': os.path.join(args.tables_dir, 'lucas_lc1_to_osm.yaml'),
         'lc1_codes_2_names_fn': os.path.join(args.tables_dir, 'lc1_h.csv'),
         'osm_2_lc_fn': os.path.join(args.tables_dir, 'osm_to_lc.yaml'),
@@ -713,7 +713,8 @@ def process_single_tile(config):
         output_fields["obs_type"] = obs_type
         output_fields["obs_dist"] = obs_dist
         # Land Cover
-        output_fields["lc"] = repre_data['osm_lc_l1']
+        output_fields["lc"] = lc_mappings['lucas_lc1_2_lc'][lc1[0:-1]]
+
         output_fields["similarity"] = repre_data['max_similarity']
         output_fields["rectangularity"] = round(repre_data['rectangularity'], 3)
         # point_update decided based on vectorized geometry in vectorize_grown_point() function
@@ -781,6 +782,7 @@ def process_tiles(args):
     lc_mappings = {
         'sim_tab': read_semantic_similarity(tables['similarity_fn']),
         'lucas_lc1_2_osm': read_yaml(tables['lc1_2_osm_fn']),
+        'lucas_lc1_2_lc': read_yaml(tables['lc1_2_lc_fn']),
         'lucas_lc1_codes_2_names': csv2dict(tables['lc1_codes_2_names_fn'], k='code', v='name', delim=';'),
         'osm_2_lc': read_yaml(tables['osm_2_lc_fn']),
         'osm_names': read_yaml(tables['osm_names_fn']),
