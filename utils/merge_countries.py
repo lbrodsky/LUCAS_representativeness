@@ -23,7 +23,7 @@ def create_ds(filename, vector_format="GPKG"):
         driver.DeleteDataSource(filename)
     return driver.CreateDataSource(filename)
 
-def merge_geometries(dst_fn, dst_ds_eu, data_dir, vector_format="GPKG"):
+def merge_geometries(dst_fn, dst_ds_eu, data_dir, first, vector_format="GPKG"):
     """ogr2ogr merge over countries
     """
     print(f'Generating: {dst_fn}')
@@ -67,6 +67,7 @@ def main(dirs, dst_dir):
     dst_ds_eu = create_ds(dst_fn_eu)
     print(f'Generating: {dst_fn_eu}')
 
+    first = True
     for cntr in dirs:
         versions = cntr.glob('v*')
         v_max = 0
@@ -78,7 +79,8 @@ def main(dirs, dst_dir):
             code = os.path.basename(os.path.dirname(src_dir)).split('_')[2]
             dst_fn = os.path.join(dst_dir, f"{code}_{basename}.gpkg")
             print(f"Processing {src_dir}...")
-            merge_geometries(dst_fn, dst_ds_eu, src_dir)
+            merge_geometries(dst_fn, dst_ds_eu, src_dir, first)
+            first = False
 
     dst_ds_eu = None
 
