@@ -11,7 +11,7 @@ countries=('at' 'be' 'bg' 'cy' 'cz' 'de' 'dk' 'ee' 'es' 'fi' 'fr' 'gb' 'gr' 'hr'
 
 for country in ${countries[@]}; do
     # version=${cntrv[$country]}
-    version=40 
+    version=44
     echo $country $version
 
 
