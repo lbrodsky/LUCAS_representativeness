@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
-
-import numpy as np
-from representativeness_exceptions import IllegalArgumentError
 import logging
+import numpy as np
+
+from region_grow.representativeness_exceptions import IllegalArgumentError
 
 class Point(object):
     """Return point (x, y) coordinates as object.

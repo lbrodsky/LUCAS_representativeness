@@ -3,6 +3,7 @@
 # Usage:
 
 import os
+import sys
 import time
 import joblib 
 from joblib import Parallel, delayed 
@@ -19,10 +20,12 @@ gdal.UseExceptions()
 import multiprocessing
 # from dask.distributed import Client, LocalCluster 
 
-from read_data import *
-from data_utils import *
-from region_grow import Point, RegionGrow, UrbanGrow
-from representativeness_exceptions import ConfigError, IllegalArgumentError
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from region_grow.read_data import *
+from region_grow.data_utils import *
+from region_grow.region_grow import Point, RegionGrow, UrbanGrow
+from region_grow.representativeness_exceptions import ConfigError, IllegalArgumentError
 
 # constants
 RAD2DEGREE = 180 / math.pi
