@@ -79,7 +79,7 @@ class TestSample:
                 "lc1_name": "Broadleaved woodland",
                 "osm_codes": "40",
                 "osm_names": "Woodland",
-                "osm_lc": "None", # should be empty string?
+                "osm_lc": None,
                 "multiclass": 1,
                 "geom_type": 1,
                 "obs_type": "1", # why string?

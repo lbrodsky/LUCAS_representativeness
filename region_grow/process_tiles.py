@@ -708,7 +708,7 @@ def process_single_tile(config):
         # print(output_fields)
         output_fields["osm_codes"] = ', '.join(str(e) for e in repre_data['osm_codes'])
         output_fields["osm_names"] = ', '.join(str(e) for e in [lc_mappings['osm_names'][i] for i in repre_data['osm_codes']])
-        output_fields["osm_lc"] = str(repre_data['osm_lc'])
+        output_fields["osm_lc"] = str(repre_data['osm_lc']) if repre_data['osm_lc'] is not None else None
         # output_fields["osm_lc"] = ', '.join(str(e) for e in repre_data['osm_codes'])
         # output_fields["multiclass"] = len(osm_lc_codes)
         output_fields["multiclass"] = len(repre_data['osm_codes'])
