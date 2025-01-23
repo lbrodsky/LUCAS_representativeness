@@ -58,7 +58,7 @@ def define_fields():
         "osm_lc": ogr.FieldDefn('osm_lc', ogr.OFTString),
         "multiclass": ogr.FieldDefn('multiclass', ogr.OFTInteger),
         "geom_type": ogr.FieldDefn('geom_type', ogr.OFTInteger),
-        "obs_type": ogr.FieldDefn('obs_type', ogr.OFTString),
+        "obs_type": ogr.FieldDefn('obs_type', ogr.OFTInteger),
         "obs_dist": ogr.FieldDefn('obs_dist', ogr.OFTInteger),
         "gps_prec":ogr.FieldDefn('gps_prec', ogr.OFTReal),
         "gprec_src": ogr.FieldDefn('gprec_src', ogr.OFTString),
