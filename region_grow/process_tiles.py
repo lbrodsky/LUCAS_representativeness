@@ -3,6 +3,7 @@
 # Usage:
 
 import os
+import sys
 import time
 import joblib 
 from joblib import Parallel, delayed 
@@ -19,10 +20,12 @@ gdal.UseExceptions()
 import multiprocessing
 # from dask.distributed import Client, LocalCluster 
 
-from read_data import *
-from data_utils import *
-from region_grow import Point, RegionGrow, UrbanGrow
-from representativeness_exceptions import ConfigError, IllegalArgumentError
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from region_grow.read_data import *
+from region_grow.data_utils import *
+from region_grow.region_grow import Point, RegionGrow, UrbanGrow
+from region_grow.representativeness_exceptions import ConfigError, IllegalArgumentError
 
 # constants
 RAD2DEGREE = 180 / math.pi
@@ -810,8 +813,7 @@ def process_tiles(args):
     logging.info(f"Process duration: {round((end - start) / 60., 2)} minutes.")
 
 
-if __name__ == "__main__":
-
+def define_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--tiles_dir', type=str, help='Directory with OSM rasterized tiles.')
     parser.add_argument('-l', '--lucas_points', metavar='lucas_points', type=str, help='LUCAS points filename.')
@@ -839,6 +841,11 @@ if __name__ == "__main__":
                         help='Set distance for shape generalization (<= 0 to disable).')
     parser.add_argument('-log_lvl', '--log_level', metavar='log_level', type=str, choices=('info', 'debug'),
                         default='info', help='Logging level.')
+
+    return parser
+
+if __name__ == "__main__":
+    parser = define_parser()
 
     args = parser.parse_args()
 

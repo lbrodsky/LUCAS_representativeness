@@ -1,7 +1,5 @@
-#!/usr/bin/python3
-
-from abc import ABC
 import logging
+from abc import ABC
 
 class BaseError(Exception, ABC):
     """Error to be raised in the case of wrong parameter of a script config.
@@ -14,11 +12,9 @@ class BaseError(Exception, ABC):
 class ConfigError(BaseError):
     """Error to be raised in the case of wrong parameter of a script config.
     """
-
     pass
 
 class IllegalArgumentError(BaseError):
     """Error to be raised in the case of wrong argument in a function call.
     """
-
     pass

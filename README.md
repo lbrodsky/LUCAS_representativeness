@@ -28,6 +28,15 @@ docker run --rm  --user `id -u` \
  --version 1
 ```
 
+Run tests on sample data:
+
+```
+docker run --rm  --user `id -u` \
+ -v `pwd`:/opt \
+ -v ./tests/data:/data \
+ lucas_representativeness:latest \
+ python3 -m pytest /opt/tests/test_sample.py
+```
 ## Tips
 
 Display `geom_nogen` in QGIS:

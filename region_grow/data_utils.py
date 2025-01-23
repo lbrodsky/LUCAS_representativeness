@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
-
 import os
 import copy
 import numpy as np
+import logging
 from pathlib import Path
 
 from osgeo import ogr
@@ -14,7 +13,6 @@ if int(shapely.__version__[0]) < 2:
     from shapely.wkb import loads as loads_wkb
 else:
     from shapely import from_wkb as loads_wkb
-import logging
 
 
 def get_extent(ds):
