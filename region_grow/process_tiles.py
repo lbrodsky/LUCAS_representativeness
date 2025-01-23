@@ -813,8 +813,7 @@ def process_tiles(args):
     logging.info(f"Process duration: {round((end - start) / 60., 2)} minutes.")
 
 
-if __name__ == "__main__":
-
+def define_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--tiles_dir', type=str, help='Directory with OSM rasterized tiles.')
     parser.add_argument('-l', '--lucas_points', metavar='lucas_points', type=str, help='LUCAS points filename.')
@@ -842,6 +841,11 @@ if __name__ == "__main__":
                         help='Set distance for shape generalization (<= 0 to disable).')
     parser.add_argument('-log_lvl', '--log_level', metavar='log_level', type=str, choices=('info', 'debug'),
                         default='info', help='Logging level.')
+
+    return parser
+
+if __name__ == "__main__":
+    parser = define_parser()
 
     args = parser.parse_args()
 
