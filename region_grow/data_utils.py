@@ -55,7 +55,6 @@ def define_fields():
         "lc1_name": ogr.FieldDefn('lc1_name', ogr.OFTString),
         "osm_codes": ogr.FieldDefn('osm_codes', ogr.OFTString),
         "osm_names": ogr.FieldDefn('osm_names', ogr.OFTString),
-        "osm_lc": ogr.FieldDefn('osm_lc', ogr.OFTString),
         "multiclass": ogr.FieldDefn('multiclass', ogr.OFTInteger),
         "geom_type": ogr.FieldDefn('geom_type', ogr.OFTInteger),
         "obs_type": ogr.FieldDefn('obs_type', ogr.OFTInteger),
