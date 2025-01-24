@@ -82,7 +82,7 @@ class TestSample:
                 "osm_lc": None,
                 "multiclass": 1,
                 "geom_type": 1,
-                "obs_type": "1", # why string?
+                "obs_type": 1,
                 "obs_dist": 3,
                 "gps_prec": 4,
                 "gprec_src": "gps",
