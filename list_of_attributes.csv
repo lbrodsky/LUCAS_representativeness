@@ -8,8 +8,8 @@ OSM_NAMES;;?;;1
 OSM_LC;;?;;1
 MULTICLASS;;?;;1
 GEOM_TYPE;;?;;1
-OBS_TYPE;1, 2, 3, 4, 5, 6, 7, -1;Observation type;1: In situ < 100 m,2: In situ > 100 m,3: In situ PI,4: In situ PI not possible,5: Out of national territory,6: Out of EU28,7: In Office PI,-1: Not Relevant;1
-OBS_DIST;;GPS Distance to theoretical point;m;1
+OBS_TYPE;1, 2, 3, 4, 5, 6, 7, -1;Observation type;1: In situ < 100 m,2: In situ > 100 m,3: In situ PI,4: In situ PI not possible,5: Out of national territory,6: Out of EU28,7: In Office PI,-1: Not Relevant;0
+OBS_DIST;;GPS Distance to theoretical point;m;0
 GPS_PREC;;GPS Precision;m;0
 GPREC_SRC;;?;;1
 LC;;?;;1
