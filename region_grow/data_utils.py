@@ -67,9 +67,10 @@ def define_fields():
         "width": ogr.FieldDefn('width', ogr.OFTReal),
         "area": ogr.FieldDefn('area', ogr.OFTReal),
         "ratio": ogr.FieldDefn('ratio', ogr.OFTReal),
-        "shape_gen": ogr.FieldDefn('shape_gen', ogr.OFTInteger),
-        "geom_nogen": ogr.FieldDefn('geom_nogen', ogr.OFTBinary),
-        "area_nogen": ogr.FieldDefn('area_nogen', ogr.OFTReal)
+        "shape_gen": ogr.FieldDefn('shape_gen', ogr.OFTInteger)
+        # for debug purposes only
+        # "geom_nogen": ogr.FieldDefn('geom_nogen', ogr.OFTBinary),
+        # "area_nogen": ogr.FieldDefn('area_nogen', ogr.OFTReal)
     }
 
 
@@ -281,14 +282,15 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     # calculate polygon width and length
     output_fields.update(update_geom_fields(rg_geometry))
-    output_fields["area_nogen"] = output_fields["area"]
+    # for debug purposes only
+    # output_fields["area_nogen"] = output_fields["area"]
     output_fields["shape_gen"] = 0
 
     # update fields
     update_fields(output_fields)
 
-    # store original geometry
-    rg_feat.SetField('geom_nogen', rg_geometry.ExportToWkb())
+    # store original geometry (for debug purposes only)
+    # rg_feat.SetField('geom_nogen', rg_geometry.ExportToWkb())
 
     out_rg_layer.SetFeature(rg_feat)
 
