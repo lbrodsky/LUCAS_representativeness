@@ -44,7 +44,7 @@ def create_polygon(extent):
 def define_fields():
     """Define set of vector attribues
        ['point_id', 'lc1_h', 'lc1_name', 'osm_code', 'lc',
-       'gps_precision', ' gprec_src', 'lc1_codes',  ... ]
+       'gps_precision', 'lc1_codes',  ... ]
        to be written in the resulting vector files.
     """
 
@@ -56,11 +56,9 @@ def define_fields():
         "osm_codes": ogr.FieldDefn('osm_codes', ogr.OFTString),
         "osm_names": ogr.FieldDefn('osm_names', ogr.OFTString),
         "multiclass": ogr.FieldDefn('multiclass', ogr.OFTInteger),
-        "geom_type": ogr.FieldDefn('geom_type', ogr.OFTInteger),
         "obs_type": ogr.FieldDefn('obs_type', ogr.OFTInteger),
         "obs_dist": ogr.FieldDefn('obs_dist', ogr.OFTInteger),
         "gps_prec":ogr.FieldDefn('gps_prec', ogr.OFTReal),
-        "gprec_src": ogr.FieldDefn('gprec_src', ogr.OFTString),
         "lc": ogr.FieldDefn('lc', ogr.OFTInteger),
         "similarity": ogr.FieldDefn('similarity', ogr.OFTInteger),
         "point_update": ogr.FieldDefn('point_update', ogr.OFTInteger),
@@ -89,7 +87,7 @@ def create_layer(vector_path, layer_name, srs, field_defs):
 
     field_exclude = []
     if layer_name not in ('lucas_region_grow', 'sentinel2_region_grow', 'lucas_urban_grow'):
-        field_exclude = ['lc_update_def', 'gprec_src', 'unc', 'pup']
+        field_exclude = ['lc_update_def', 'unc', 'pup']
 
     for k, v in field_defs.items():
         if k not in field_exclude:
