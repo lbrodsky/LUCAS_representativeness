@@ -37,11 +37,3 @@ docker run --rm  --user `id -u` \
  lucas_representativeness:latest \
  python3 -m pytest /opt/tests/test_sample.py
 ```
-## Tips
-
-Display `geom_nogen` in QGIS:
-
-1. Open Database > DB Manager
-1. Connect GPKG file and open SQL Window
-1. Type `SELECT st_geomfromwkb(geom_nogen, 3035) AS geom FROM lucas_region_grow`
-1. Load as a new layer

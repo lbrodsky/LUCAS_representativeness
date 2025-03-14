@@ -614,9 +614,6 @@ def process_single_tile(config):
         if gps_prec_val in (-1, 0):
             # Parameter calculated as median of LUCAS GPS precision
             gps_prec_val = 5.0
-            gps_prec_src = 'median'
-        else:
-            gps_prec_src = 'gps'
 
         # set gps minimal preciostion to tile pixel size
         # gps_prec_val = max(gps_prec_val, geo_transform[1])
@@ -634,7 +631,6 @@ def process_single_tile(config):
             'lc1_h': lc1,
             'lc1_name': lc_mappings['lucas_lc1_codes_2_names'][lc1],
             'gps_prec': gps_prec_val,
-            'gprec_src': gps_prec_src,
             'tile_id': os.path.basename(t)
         }
 
@@ -710,7 +706,6 @@ def process_single_tile(config):
         output_fields["osm_names"] = ', '.join(str(e) for e in [lc_mappings['osm_names'][i] for i in repre_data['osm_codes']])
         # output_fields["multiclass"] = len(osm_lc_codes)
         output_fields["multiclass"] = len(repre_data['osm_codes'])
-        output_fields["geom_type"] = geometry_type
         output_fields["obs_type"] = obs_type
         output_fields["obs_dist"] = obs_dist
         # Land Cover

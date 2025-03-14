@@ -44,7 +44,7 @@ def create_polygon(extent):
 def define_fields():
     """Define set of vector attribues
        ['point_id', 'lc1_h', 'lc1_name', 'osm_code', 'lc',
-       'gps_precision', ' gprec_src', 'lc1_codes',  ... ]
+       'gps_precision', 'lc1_codes',  ... ]
        to be written in the resulting vector files.
     """
 
@@ -56,11 +56,9 @@ def define_fields():
         "osm_codes": ogr.FieldDefn('osm_codes', ogr.OFTString),
         "osm_names": ogr.FieldDefn('osm_names', ogr.OFTString),
         "multiclass": ogr.FieldDefn('multiclass', ogr.OFTInteger),
-        "geom_type": ogr.FieldDefn('geom_type', ogr.OFTInteger),
         "obs_type": ogr.FieldDefn('obs_type', ogr.OFTInteger),
         "obs_dist": ogr.FieldDefn('obs_dist', ogr.OFTInteger),
         "gps_prec":ogr.FieldDefn('gps_prec', ogr.OFTReal),
-        "gprec_src": ogr.FieldDefn('gprec_src', ogr.OFTString),
         "lc": ogr.FieldDefn('lc', ogr.OFTInteger),
         "similarity": ogr.FieldDefn('similarity', ogr.OFTInteger),
         "point_update": ogr.FieldDefn('point_update', ogr.OFTInteger),
@@ -69,9 +67,10 @@ def define_fields():
         "width": ogr.FieldDefn('width', ogr.OFTReal),
         "area": ogr.FieldDefn('area', ogr.OFTReal),
         "ratio": ogr.FieldDefn('ratio', ogr.OFTReal),
-        "shape_gen": ogr.FieldDefn('shape_gen', ogr.OFTInteger),
-        "geom_nogen": ogr.FieldDefn('geom_nogen', ogr.OFTBinary),
-        "area_nogen": ogr.FieldDefn('area_nogen', ogr.OFTReal)
+        "shape_gen": ogr.FieldDefn('shape_gen', ogr.OFTInteger)
+        # for debug purposes only
+        # "geom_nogen": ogr.FieldDefn('geom_nogen', ogr.OFTBinary),
+        # "area_nogen": ogr.FieldDefn('area_nogen', ogr.OFTReal)
     }
 
 
@@ -89,7 +88,7 @@ def create_layer(vector_path, layer_name, srs, field_defs):
 
     field_exclude = []
     if layer_name not in ('lucas_region_grow', 'sentinel2_region_grow', 'lucas_urban_grow'):
-        field_exclude = ['lc_update_def', 'gprec_src', 'unc', 'pup']
+        field_exclude = ['lc_update_def', 'unc', 'pup']
 
     for k, v in field_defs.items():
         if k not in field_exclude:
@@ -283,14 +282,15 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     # calculate polygon width and length
     output_fields.update(update_geom_fields(rg_geometry))
-    output_fields["area_nogen"] = output_fields["area"]
+    # for debug purposes only
+    # output_fields["area_nogen"] = output_fields["area"]
     output_fields["shape_gen"] = 0
 
     # update fields
     update_fields(output_fields)
 
-    # store original geometry
-    rg_feat.SetField('geom_nogen', rg_geometry.ExportToWkb())
+    # store original geometry (for debug purposes only)
+    # rg_feat.SetField('geom_nogen', rg_geometry.ExportToWkb())
 
     out_rg_layer.SetFeature(rg_feat)
 
