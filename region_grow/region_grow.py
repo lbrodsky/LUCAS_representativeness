@@ -61,13 +61,7 @@ class RegionGrow(object):
     def get_gray_dDiff(self, current_point, tmp_point):
         """Analyse if region grow is still within the same land cover.
         """
-        # curr_pixel = int(self.image[current_point.x, current_point.y])
         curr_pixel = int(self.image[current_point.y, current_point.x])
-        # tmp_pixel = self.image[tmp_point.x, tmp_point.y]
-        # logging.debug(f'Point x: {tmp_point.x}')
-        # logging.debug(f'Point y: {tmp_point.y}')
-        # if tmp_point.y == 45:
-        #     print(tmp_point.y)
         tmp_pixel = self.image[tmp_point.y, tmp_point.x]
 
         gray_diff = abs(int(curr_pixel) - int(tmp_pixel))
@@ -101,7 +95,7 @@ class RegionGrow(object):
         return rmin, rmax, cmin, cmax
 
     def rectangularity(self, img):
-        """Calcualte the rectangularity measure.
+        """Calculate the rectangularity measure.
 
         http://www.cyto.purdue.edu/cdroms/micro2/content/education/wirth10.pdf
         Fk = ratio of region area and the area of a bounding rectangle
@@ -146,7 +140,6 @@ class RegionGrow(object):
             for current_point in seed_list:
                 # take new point to analyze grow
                 # mark the current point with the label value
-                # seedmark[current_point.x, current_point.y] = label
                 seedmark[current_point.y, current_point.x] = label
 
                 # take a round given the connectivity selection
@@ -155,7 +148,6 @@ class RegionGrow(object):
                     y_tmp = current_point.y + y
 
                     # check position within tile patch
-                    # if x_tmp < 0 or y_tmp < 0 or x_tmp >= height or y_tmp >= width:
                     if x_tmp < 0 or y_tmp < 0 or x_tmp >= width or y_tmp >= height:
                         continue
 
@@ -164,19 +156,15 @@ class RegionGrow(object):
                         current_point, Point(x_tmp, y_tmp)
                     )
 
-                    # if gray_diff < self.thresh and seedmark[x_tmp, y_tmp] == 0:
                     if gray_diff < self.thresh and seedmark[y_tmp, x_tmp] == 0:
                         # if new valid point, append it
-                        # seedmark[x_tmp, y_tmp] = label
                         seedmark[y_tmp, x_tmp] = label
                         new_point = Point(x_tmp, y_tmp)
 
                         next_seed_list.append(new_point)
 
-                    # elif gray_diff >= self.thresh and seedmark[x_tmp, y_tmp] == 0:
                     elif gray_diff >= self.thresh and seedmark[y_tmp, x_tmp] == 0:
                         # edge to other class
-                        # seedmark[x_tmp, y_tmp] = label2
                         seedmark[y_tmp, x_tmp] = label2
 
             rect_last = rect
@@ -184,9 +172,6 @@ class RegionGrow(object):
 
             # if no more cells to go, stop
             if len(next_seed_list) == 0:
-                # if rect < self.threshold_shape:
-                    # seedmark_last = seedmark
-                    # rect_last = rect
                 break
 
             seed_list = next_seed_list

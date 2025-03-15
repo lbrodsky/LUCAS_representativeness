@@ -41,7 +41,7 @@ def read_yaml(fn):
 
 
 def csv2dict(csv_fn, k='code', v='name', delim=';'):
-    """Read csv translation table into dictionary.
+    """Read CSV translation table into dictionary.
     """
     d = {}
     with open(csv_fn) as f:
@@ -53,7 +53,7 @@ def csv2dict(csv_fn, k='code', v='name', delim=';'):
 
 
 def read_semantic_similarity(similarity_fn):
-    """Read land cover semantic similarity table from csv into Pandas DataFrame.
+    """Read land cover semantic similarity table from CSV into Pandas DataFrame.
     """
     df = pd.read_csv(similarity_fn, sep=';', header=0)
 
