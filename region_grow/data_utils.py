@@ -16,7 +16,7 @@ else:
 
 
 def get_extent(ds):
-    """Return list of corner coordinates from a gdal Dataset.
+    """Return list of corner coordinates from a GDAL Dataset.
     """
     xmin, xpixel, _, ymax, _, ypixel = ds.GetGeoTransform()
     width, height = ds.RasterXSize, ds.RasterYSize
@@ -42,12 +42,10 @@ def create_polygon(extent):
 
 
 def define_fields():
-    """Define set of vector attribues
-       ['point_id', 'lc1_h', 'lc1_name', 'osm_code', 'lc',
-       'gps_precision', 'lc1_codes',  ... ]
-       to be written in the resulting vector files.
+    """Define set of vector attribues ['point_id', 'lc1_h',
+       'lc1_name', 'osm_code', 'lc', 'gps_precision', 'lc1_codes',
+       ... ] to be written in the resulting vector files.
     """
-
     return {
         "point_id": ogr.FieldDefn('point_id', ogr.OFTInteger),
         'tile_id': ogr.FieldDefn('tile_id', ogr.OFTString),
@@ -81,7 +79,7 @@ def create_layer(vector_path, layer_name, srs, field_defs):
     if not Path(vector_path).exists():
         out_data = driver.CreateDataSource(vector_path)
     else:
-        out_data = ogr.Open(vector_path, update=True) #gdal.OpenEx(vector_path, gdal.OF_VECTOR | gdal.GA_Update)
+        out_data = ogr.Open(vector_path, update=True)
     out_layer = out_data.CreateLayer(layer_name,
                                      geom_type=ogr.wkbPoint if layer_name.endswith("points") else ogr.wkbPolygon,
                                      srs=srs, options=["OVERWRITE=YES"])
@@ -130,10 +128,10 @@ def xy_to_array(raster_fn, x_lucas, y_lucas):
 
 
 def get_patch_geo_transform(geo_transform, y_size, x_cell, y_cell, patch_x_size, patch_y_size):
-    """Extract patch geo metadata from full image array.
+    """Extract patch metadata from full image array.
     """
     ulx, xres, xskew, uly, yskew, yres = geo_transform
-    lry = uly + (y_size * yres) # tile coord
+    lry = uly + (y_size * yres) # tile coords
 
     if patch_x_size % 2 > 0:
         # -1  ...
@@ -145,8 +143,6 @@ def get_patch_geo_transform(geo_transform, y_size, x_cell, y_cell, patch_x_size,
         uly_patch = lry + (y_cell * abs(yres)) + ((patch_y_size - 1) * abs(yres) / 2)
     else:
         uly_patch = lry + (y_cell * abs(yres)) + ((patch_y_size) * abs(yres) / 2)
-    # y_cell_upper = round(((uly - y_geo) / abs(yres)))
-    # uly_patch = uly - (y_cell_upper * abs(yres)) + ((patch_y_size - 1) * abs(yres) / 2)
 
     tile_geo_transform = ulx_patch, geo_transform[1], geo_transform[2], uly_patch, geo_transform[4], geo_transform[5]
 
@@ -192,8 +188,6 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
                           shp_generalize_dist, shp_generalize_min_ratio=0.3,
                           urban=False):
     """Convert the NumPy grown region into vector.
-
-    :param int shp_generalize_dist: distance for shape generalization
     """
     def update_geom_fields(rg_geometry):
         attrs = {}
@@ -231,7 +225,7 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
         f"Region Grow multi-polygon feature count: {out_rg_layer.GetFeatureCount()}"
     )
 
-    ### is applied due to 8CONNECTED=8 ###
+    # is applied due to 8CONNECTED=8
     out_rg_layer.ResetReading()
     if not urban:
         # non-urban: remove small polygonized features
@@ -264,7 +258,6 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     else:
         # urban: convert polygonized features into multipolygon feature
-        # rg_feat = out_rg_layer.GetNextFeature()
         rg_feat = convert_polygons2multi(out_rg_layer)
 
     rg_geometry = rg_feat.GetGeometryRef()
@@ -342,7 +335,6 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 def get_length_width(geometry):
     """Calculate length and with from region grow
     """
-    # logging.debug(f'Geometry export: {bytes(geometry.ExportToIsoWkb())}')
     poly = loads_wkb(bytes(geometry.ExportToIsoWkb())) 
     # get minimum bounding box around polygon
     box = poly.minimum_rotated_rectangle
@@ -371,12 +363,10 @@ def array_to_xy(geo_transform, x_idx, y_idx, pixel_size):
 def save_point(lucas_geometry, out_point_layer, output_fields):
     """Save vector points geometry and attributes into layer.
     """
-    # save LUCAS original geometry and LC attribute
     layer_defn = out_point_layer.GetLayerDefn()
     point_feature = ogr.Feature(layer_defn)
     for field, value in output_fields.items():
         if layer_defn.GetFieldIndex(field) > -1: # skip exluded fields
             point_feature.SetField(field, value)
     point_feature.SetGeometry(lucas_geometry)
-    # out_point_layer.SetFeature(point_feature)
     out_point_layer.CreateFeature(point_feature)

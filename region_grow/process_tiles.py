@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# Usage:
-
 import os
 import sys
 import time
@@ -18,7 +16,6 @@ from shapely.geometry import Polygon
 from osgeo import gdal
 gdal.UseExceptions() 
 import multiprocessing
-# from dask.distributed import Client, LocalCluster 
 
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -31,16 +28,7 @@ from region_grow.representativeness_exceptions import ConfigError, IllegalArgume
 RAD2DEGREE = 180 / math.pi
 DEGREE2RAD = math.pi / 180
 
-
-__version__ = "0.9.5"
-
-# Log: multiclass problem fixed
-# Log: pt_update not for all points int the osm class loop
-# Log: pt_update based on rg polygon and LUCAS geometry overlay
-# Log: Joblib/Dask paralelization test
-# Log: 'asymetrical patch coords correction'
-
-# TODO: logging information review
+__version__ = "1.0"
 
 def init_logging(dst_dir, args):
     """Initialize the processing log.
@@ -55,9 +43,7 @@ def init_logging(dst_dir, args):
                         handlers=[logging.FileHandler(log_file, mode='w'),
                                   logging.StreamHandler()])
 
-    # print(log_file)
-
-    # LOG PARAMETER SETTINGS
+    # log parameter settings
     logging.info('---')
     logging.info('Parameter settings')
     logging.info('---')
@@ -69,7 +55,6 @@ def init_logging(dst_dir, args):
     logging.info(f'Shape threshold: {args.shp_thr}')
     logging.info(f'Shape generalization distance: {args.shp_generalize_dist}')
     logging.info(f'Region max. size: {args.region_max_size}')
-    # logging.info(f'Sensor: {args.sensor}')
     logging.info(f'Translation and similarity tables: {args.tables_dir}')
 
 
@@ -79,17 +64,13 @@ def prepare_inputs(args):
     if args.selected_tiles is not None:
         tiles = []
         tiles_to_process = args.selected_tiles.split(',')
-        # print(tiles_to_process)
 
         for tile in tiles_to_process:
-            # print(tile)
-            # print(glob.glob(args.tiles_dir + f'/*{tile}.tif'))
             tile_ = glob.glob(args.tiles_dir + f'/*{tile}.tif')
             if tile_ != []:
                 tiles.append(tile_[0])
     else:
         tiles = glob.glob(args.tiles_dir + '/*.tif')
-        # print(tiles)
 
     if len(tiles) == 0:
         raise ConfigError(f'No available tiles to process in directory {args.tiles_dir}')
@@ -100,7 +81,6 @@ def prepare_inputs(args):
         selected_points = args.selected_points.split(',')
 
     tables = {
-        # 'similarity_fn': os.path.join(args.tables_dir, 'semsim_v2.csv'),
         'similarity_fn': os.path.join(args.tables_dir, 'semsim_l3_v3.csv'),
         'lc1_2_lc_fn': os.path.join(args.tables_dir, 'lucas_lc1_to_lc.yaml'),
         'lc1_2_osm_fn': os.path.join(args.tables_dir, 'lucas_lc1_to_osm.yaml'),
@@ -138,11 +118,15 @@ def select_LUCAS_points(img_ds, layer):
     return layer.GetFeatureCount()
 
 def polar_to_cartesian(centre, angle, radius):
+    """Convert polar coords to cartesian.
+    """
     x = math.cos(angle) * radius + centre[0]
     y = math.sin(angle) * radius + centre[1]
     return (x,y)
 
 def make_arc(centre, radius, rad_from_azimuth, rad_to_azimuth, rad_angle_resolution):
+    """Create arc for wedge buffer.
+    """
     cartesian = []
     rad_az = rad_from_azimuth
     if rad_from_azimuth < rad_to_azimuth:
@@ -157,7 +141,9 @@ def make_arc(centre, radius, rad_from_azimuth, rad_to_azimuth, rad_angle_resolut
     return cartesian
 
 def wedge_buffer(centre, radius, azimuth, opening_angle, inner_radius=0, angle_resolution=10):
-    # make Azimuth 0 north
+    """Create wedge buffer.
+    """
+    # make azimuth 0 north
     azimuth += 90
     rad_from_azimuth = (azimuth - opening_angle * 0.5) * DEGREE2RAD
     rad_to_azimuth = (azimuth + opening_angle * 0.5) * DEGREE2RAD
@@ -168,7 +154,7 @@ def wedge_buffer(centre, radius, azimuth, opening_angle, inner_radius=0, angle_r
     if inner_radius <= 0:
         cartesian_coords.append(centre)
     else:
-        # Reverse arc at inner radius
+        # reverse arc at inner radius
         cartesian_coords += make_arc(centre, inner_radius, rad_to_azimuth, rad_from_azimuth, rad_angle_res)
 
     # Close ring
@@ -181,21 +167,17 @@ def calculate_azimuth(ax, ay, bx, by):
     dx=Math.abs(x1-x2) and dy=Math.abs(y1-y2)
     tan(theta) = dx/dy
 
-    Args:
-        ax (int): The x-coordinate of the first point defining a line.
-        ay (int): The y-coordinate of the first point defining a line.
-        bx (int): The x-coordinate of the second point defining a line.
-        by (int): The y-coordinate of the second point defining a line.
+    :param ax (int): The x-coordinate of the first point defining a line.
+    :param ay (int): The y-coordinate of the first point defining a line.
+    :param bx (int): The x-coordinate of the second point defining a line.
+    :param by (int): The y-coordinate of the second point defining a line.
 
-    Returns:
-        float: bearing in degrees
+    :return float: bearing in degrees
     """
-
-    TWO_PI = math.pi * 2
-    # if (a1 = b1 and a2 = b2) throw an error
+    two_pi = math.pi * 2
     theta = math.atan2(bx - ax, ay - by)
-    if (theta < 0.0):
-        theta += TWO_PI
+    if theta < 0.0:
+        theta += two_pi
     return math.degrees(theta)
 
 
@@ -203,7 +185,6 @@ def create_buffer_mask(geometry, geometry2, gps_prec_val, out_buffer_layer, outp
                        tile_shape, srs, geo_transform):
     """Create buffer around LUCAS point geometry and convert it into raster / NumPy array.
     """
-
     x1 = geometry.GetX()
     y1 = geometry.GetY()
     x2 = geometry2.GetX()
@@ -212,18 +193,18 @@ def create_buffer_mask(geometry, geometry2, gps_prec_val, out_buffer_layer, outp
     dist = math.dist([x1, y1], [x2, y2])
 
     if dist >= gps_prec_val:
-        # Create wedge vector
+        # create wedge vector
         azimuth = calculate_azimuth(x2, y2, x1, y1)
         opening_angle = 120
         poly = wedge_buffer((x1, y1), gps_prec_val, azimuth, opening_angle)
         ring = ogr.Geometry(ogr.wkbLinearRing)
         for p in poly:
             ring.AddPoint_2D(p[0], p[1])
-        # Create polygon
+        # create polygon
         point_buffer = ogr.Geometry(ogr.wkbPolygon)
         point_buffer.AddGeometry(ring)
     else:
-        # Create point buffer
+        # create point buffer
         point_buffer = geometry.Buffer(gps_prec_val)
 
     buf_feature = ogr.Feature(out_buffer_layer.GetLayerDefn())
@@ -234,7 +215,7 @@ def create_buffer_mask(geometry, geometry2, gps_prec_val, out_buffer_layer, outp
     buf_feature.SetGeometry(point_buffer)
     out_buffer_layer.CreateFeature(buf_feature)
 
-    # SAVE TO MEMORY
+    # save to memory
     drv = ogr.GetDriverByName('Memory')
     dst_ds = drv.CreateDataSource('')
     dst_layer = dst_ds.CreateLayer('', srs=srs, geom_type=ogr.wkbPolygon)
@@ -247,13 +228,15 @@ def create_buffer_mask(geometry, geometry2, gps_prec_val, out_buffer_layer, outp
     dst_layer.CreateFeature(buffer_feature)
     buffer_feature = None
 
-    # CREATE ARRAY MASK
+    # create array mask
     ycount, xcount = tile_shape
     target_ds = gdal.GetDriverByName('MEM').Create('', xcount, ycount, 1, gdal.GDT_Byte)
     target_ds.SetGeoTransform(geo_transform)
     target_ds.SetProjection(srs.ExportToWkt())
     gdal.RasterizeLayer(target_ds, [1], dst_layer, burn_values=[1])
     band_mask = target_ds.GetRasterBand(1)
+    dst_ds.Close()
+
     return band_mask.ReadAsArray()
 
 
@@ -287,7 +270,6 @@ def get_patch_area(patches, osm_lc_code, lc_mappings):
     unique_patches_codes = list(np.unique(patches))
     for k, v in lc_mappings['osm_2_lc'].items():
         if v == osm_lc_code:
-            # k == 30 or 31
             if k in unique_patches_codes:
                 osm_code = k
     patch = patches == osm_code
@@ -303,7 +285,6 @@ def update_seed_point(patches, osm_code_seed):
     # https://stackoverflow.com/questions/38933566/quickly-calculating-centroid-of-binary-numpy-array
     # get the coordinates of the center point
     yx = np.argwhere(lc_masked_correct_px == 1).sum(0) / count
-    # logging.debug(f'CENTROID: {yx}')
     y_center, x_center = None, None
 
     if yx[0] > 0 and yx[1] > 0:
@@ -315,7 +296,6 @@ def update_seed_point(patches, osm_code_seed):
         logging.debug('Centroid correct')
     else:
         logging.debug('Seed value mis-match')
-        # init
         neighbours_ne = (
             (-1, 0), (-1, 1), (0, 1), (1, 1)
         )
@@ -360,9 +340,9 @@ def get_tile_patch(full_img, lucas_point, tile_size, pixel_size):
     """Extract patch from full image array.
     """
     y_up = lucas_point.y - round(tile_size/2/pixel_size)
-    y_down = lucas_point.y + round(tile_size/2/pixel_size) # + 1
+    y_down = lucas_point.y + round(tile_size/2/pixel_size)
     x_left = lucas_point.x - round(tile_size/2/pixel_size)
-    x_right = lucas_point.x + round(tile_size/2/pixel_size) # + 1
+    x_right = lucas_point.x + round(tile_size/2/pixel_size)
 
     if y_up < 0:
         # if index out of tile, shift lower index to get symetrical square patch
@@ -377,7 +357,6 @@ def get_tile_patch(full_img, lucas_point, tile_size, pixel_size):
         )
     if x_left < 0:
         # treat the index out of tile
-        # TODO: check!!!
         x_left_diff = abs(x_left)
         x_right = x_right + (x_left_diff -1)
         x_left = 0
@@ -387,8 +366,6 @@ def get_tile_patch(full_img, lucas_point, tile_size, pixel_size):
         logging.warning(
             'Right X is out of the image - using the rightmost coordinate  instead'
         )
-    # TODO: check overlow of index to right and down the tile
-
 
     # get the patch
     return full_img[y_up:y_down, x_left:x_right]
@@ -420,7 +397,7 @@ def get_urban_region(lucas_osm_code, osm_code, patch):
 def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields, tile_img, srs, geo_transform, point_id,
                    lc_mappings, lc1, region_max_size, pixel_size, shp_thr, threshold, connectivity,
                    obs_direct, max_multiplier):
-    """Calcualte representartiveness and related data
+    """Calculate representativess and related data.
     """
     patch, grown_point, rectangularity = None, None, None
     x_array, y_array = None, None
@@ -428,11 +405,11 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
     osm_code_seed = None
     x_lucas = geometry.GetX()
     y_lucas = geometry.GetY()
-    # Create buffer around LUCAS point based on GPS presision
+    # create buffer around LUCAS point based on GPS presision
     buffer_mask = create_buffer_mask(geometry, geometry2, gps_prec_val, outputs['points_buffer']['ds_layer'], output_fields,
                                      tile_img.shape, srs, geo_transform)
 
-    # Read OSM codes (10, 20, ..., 100) within the buffer area
+    # read OSM codes (10, 20, ..., 100) within the buffer area
     patches = get_patches(tile_img, buffer_mask)
     osm_codes = get_osm_lc_codes_from_buffer(patches)
     if osm_codes == []:
@@ -440,15 +417,15 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
         save_point(geometry, outputs['original_points']['ds_layer'], output_fields)
         return None
 
-    # Translate OSM to LUCAS lc coding
+    # translate OSM to LUCAS lc coding
     lucas_osm_code = lc_mappings['lucas_lc1_2_osm'][lc1]
 
-    # SETTING: coding for LUCAS lc and OSM land cover comparison - similarity
+    # setting: coding for LUCAS lc and OSM land cover comparison - similarity
     # 0 .. no similarity -> different classes
     # 1 .. partial similarity
     # 2 .. full match
 
-    # Init
+    # init
     grown_point = None
     urban_repre = None
     # pt_update = 0 pt_update is solved in data_utils.py
@@ -458,22 +435,22 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
     rectangularity = 0
 
     if len(osm_codes) == 1 and osm_codes[0] == lucas_osm_code:
-        # One code within buffer area -> run directly RG on original LUCAS geometry
+        # one code within buffer area -> run directly RG on original LUCAS geometry
         max_similarity = 2
-        # Get array index of seed point based on LUCAS geometry
+        # get array index of seed point based on LUCAS geometry
         x_array, y_array = xy_to_array(t, geometry.GetX(), geometry.GetY())
-        # Patch is a symmetrical subset (e.g. 100m) of tile around LUCAS point
-        # Grown_point is a result of RG algorithm, Numpy array with coding 1..representative region, 0..not region
+        # patch is a symmetrical subset (e.g. 100m) of tile around LUCAS point
+        # grown_point is a result of RG algorithm, Numpy array with coding 1..representative region, 0..not region
         patch, grown_point, rectangularity = get_grown_region(x_array, y_array, tile_img, region_max_size, pixel_size,
                                                               shp_thr, threshold, connectivity)
-        # print(rectangularity)
-        # Urban region grow segments all urban regions (e.g. buildings) with the Patch
-        # This version is applied as RG can grow into tine regions, e.g. one small building - imbalance
+
+        # urban region grow segments all urban regions (e.g. buildings) with the Patch
+        # this version is applied as RG can grow into tine regions, e.g. one small building - imbalance
         urban_repre = get_urban_region(lucas_osm_code, osm_codes[0], patch)
         osm_lc_l1 = lc_mappings['osm_2_lc'][osm_codes[0]]
 
     else:
-        # Multiple codes within buffer area
+        # multiple codes within buffer area
         # -> run RG on correct patch of LUCAS buffer or increse the buffer size
         while True:
             max_similarity = 0
@@ -498,8 +475,9 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
                 i += 1
 
             # if first round and not full match and obs direct N or E
-            # then point falls on the edge of two classes (linear feature, etc.)
-            # see LUCAS 2018 doc: https://ec.europa.eu/eurostat/documents/205002/8072634/LUCAS-2018-C1-Instructions.pdf
+            # then point falls on the edge of two classes (linear
+            # feature, etc.)  see LUCAS 2018 doc:
+            # https://ec.europa.eu/eurostat/documents/205002/8072634/LUCAS-2018-C1-Instructions.pdf
             # page 25
             if prec_multiplier == 1 and similarity != 2 and obs_direct != 1:
                 osm_code_seed = None
@@ -522,7 +500,6 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
                     urban_repre = get_urban_region(lucas_osm_code, osm_code_seed, patch)
 
                     # update the x, y geo coordinates based on shifted patch
-                    # TODO: check geometry position
                     x_lucas, y_lucas = array_to_xy(geo_transform, x_array, y_array, pixel_size)
                     osm_lc_l1 = lc_mappings['osm_2_lc'][osm_code_seed]
                     break
@@ -555,7 +532,7 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
 
 
 def process_single_tile(config):
-    """Main Region Grow proces at level of single tile.
+    """Main region grow process at level of single tile.
     """
     # Unpack configuration parameters
     t = config[0]
@@ -571,23 +548,21 @@ def process_single_tile(config):
     max_multiplier = config[6].multiplier
     shp_generalize_dist = config[6].shp_generalize_dist
 
-    # Read OSM raster data
+    # read OSM raster data
     img_ds = gdal.Open(t)
     pixel_size = img_ds.GetGeoTransform()[1]
     geo_transform = img_ds.GetGeoTransform()
     tile_img = img_ds.ReadAsArray()
-    # Open ST_LUCAS point layer
+    # open ST_LUCAS point layer
     lucas_ds, lucas_layer = open_LUCAS_points(lucas_fn) 
     feature_count = select_LUCAS_points(img_ds, lucas_layer)
     logging.info(f"Selected features from {os.path.basename(t)}: {feature_count}")
     logging.info('---')
-    # Open ST_LUCAS theoretical point layer
+    # open ST_LUCAS theoretical point layer
     lucas_thr_ds, lucas_thr_layer = open_LUCAS_points(lucas_thr_fn)
-    # feature_count_thr = select_LUCAS_points(img_ds, lucas_thr_layer)
-    # logging.info(f"Selected theoretical features from {os.path.basename(t)}: {feature_count_thr}")
     logging.info('---')
 
-    # Define outputs
+    # define outputs
     srs = osr.SpatialReference()
     srs.ImportFromWkt(img_ds.GetProjectionRef())
     tile_id = os.path.basename(t).split('.')[0]
@@ -595,37 +570,34 @@ def process_single_tile(config):
                                                    'original_points', 'urban_grow', 'updated_points'],
                              srs, define_fields())
 
-    # Cycle over selected LUCAS points and run Region Grow
+    # cycle over selected LUCAS points and run Region Grow
     feature = lucas_layer.GetNextFeature()
     while feature:
         point_id = str(int(feature.GetField('point_id')))
         lc1 = feature.GetField('lc1_h')
-        # Check if lc is a real class
+        # check if lc is a real class
         if lc1 == '-1':
             feature = lucas_layer.GetNextFeature()
             continue
-        # Dev filter
+        # dev filter
         if selected_points and point_id not in selected_points:
             feature = lucas_layer.GetNextFeature()
             continue
         logging.debug(f'Processing PID/tile: {point_id, t}') 
-        # Get GPS accuracey from LUCAS in-situ measurements -> buffer
+        # get GPS accuracey from LUCAS in-situ measurements -> buffer
         gps_prec_val = feature.GetField('gps_prec')
         if gps_prec_val in (-1, 0):
-            # Parameter calculated as median of LUCAS GPS precision
+            # parameter calculated as median of LUCAS GPS precision
             gps_prec_val = 5.0
 
-        # set gps minimal preciostion to tile pixel size
-        # gps_prec_val = max(gps_prec_val, geo_transform[1])
-
-        # Get obs_dist: difference between GPS and theoretical point
+        # get obs_dist: difference between GPS and theoretical point
         obs_dist = feature.GetField('obs_dist')
         logging.debug(f'GPS prec: {gps_prec_val} | obs_dist: {obs_dist}')
         obs_type = feature.GetField('obs_type')
         logging.debug(f'obs_type: {obs_type}')
         obs_direct = feature.GetField('obs_direct')
 
-        # Output vector attributes
+        # output vector attributes
         output_fields = {
             'point_id': int(point_id),
             'lc1_h': lc1,
@@ -634,13 +606,13 @@ def process_single_tile(config):
             'tile_id': os.path.basename(t)
         }
 
-        # Get LUCAS  geometry: 0 .. none, 1 .. measured, 2 .. theoretical
+        # get LUCAS  geometry: 0 .. none, 1 .. measured, 2 .. theoretical
         geometry_type = 0
         # type insitu, office
         gps_prec_val_updated = max(gps_prec_val, geo_transform[1])
         # obs_type: 1 In situ < 100 m | obs_dist in meters,
         # obs_type: 7 In Office PI
-        # OUT: and obs_dist < 2 * gps_prec_val
+        # out: and obs_dist < 2 * gps_prec_val
         repre_data = None
         # measured geometry
         geometry = feature.GetGeometryRef()
@@ -663,12 +635,9 @@ def process_single_tile(config):
         elif (obs_dist is not None and obs_dist <= 2000.0) or (obs_type == 7): 
             # take theoretical point geometry
             geometry_type = 2
-            #
             logging.debug(f'Reading geometry from theoretical points, ID: {thr_feature.GetField("point_id")} ')
-            # theretical coords fall on edge of pixels -> increase gps prec val
+            # theoretical coords fall on edge of pixels -> increase gps prec val
             repre_data = get_repre_data(t, geometry_thr, geometry, gps_prec_val_updated, outputs, output_fields, tile_img, srs, geo_transform, point_id, lc_mappings, lc1, region_max_size, pixel_size, shp_thr, threshold, connectivity,obs_direct, max_multiplier)
-            # except:
-            # logging.debug(f'No feature in thr layer, point_id: {point_id}')
             # obs_type 3: In situ PI
             if obs_type == 3 and geometry is not None and (repre_data is not None and repre_data['max_similarity'] != 2):
                 repre_data_tmp = repre_data
@@ -695,28 +664,17 @@ def process_single_tile(config):
                     'rectangularity': 0, 
                     'grown_point': None 
                     }
-            # feature = lucas_layer.GetNextFeature()
-            # continue
 
-        # osm_codes, osm_lc_l1, max_similarity, rectangularity, grown_point, patch, x_array, y_array, urban_repre, \
-        # prec_multiplier, x_lucas, y_lucas = data
-
-        # print(output_fields)
         output_fields["osm_codes"] = ', '.join(str(e) for e in repre_data['osm_codes'])
         output_fields["osm_names"] = ', '.join(str(e) for e in [lc_mappings['osm_names'][i] for i in repre_data['osm_codes']])
-        # output_fields["multiclass"] = len(osm_lc_codes)
         output_fields["multiclass"] = len(repre_data['osm_codes'])
         output_fields["obs_type"] = obs_type
         output_fields["obs_dist"] = obs_dist
-        # Land Cover
         output_fields["lc"] = lc_mappings['lucas_lc1_2_lc'][lc1[0:-1]]
-
         output_fields["similarity"] = repre_data['max_similarity']
         output_fields["rectangularity"] = round(repre_data['rectangularity'], 3)
-        # point_update decided based on vectorized geometry in vectorize_grown_point() function
-        # output_fields["point_update"] = point_update
 
-        # Save outputs:  ['region_grow', 'nomatch_points', 'points_buffer', 'original_points', 'urban_grow']
+        # save outputs
         if repre_data is not None and  repre_data['grown_point'] is not None:
             patch_y_size, patch_x_size = repre_data['patch'].shape
             patch_geo_transform = get_patch_geo_transform(geo_transform, img_ds.RasterYSize,
@@ -725,7 +683,8 @@ def process_single_tile(config):
             # save vectors based on grown_point numpy array and return the RG geometry
             vectorize_grown_point(repre_data['grown_point'], outputs['region_grow']['ds_layer'], patch_geo_transform,
                                   img_ds.GetProjectionRef(), output_fields, geometry, shp_generalize_dist)
-            vectorize_grown_point(repre_data['urban_repre'] if repre_data['urban_repre'] is not None else repre_data['grown_point'], outputs['urban_grow']['ds_layer'], patch_geo_transform,
+            vectorize_grown_point(repre_data['urban_repre'] if repre_data['urban_repre'] is not None else repre_data['grown_point'],
+                                  outputs['urban_grow']['ds_layer'], patch_geo_transform,
                                   img_ds.GetProjectionRef(), output_fields, geometry, shp_generalize_dist,
                                   urban=repre_data['urban_repre'] is not None)
 
@@ -739,7 +698,6 @@ def process_single_tile(config):
         save_point(geometry, outputs['original_points']['ds_layer'], output_fields)
         # save LUCAS points with updated geo coordinates
         if output_fields["point_update"]:
-            # print('Updating LUCAS pt geometry')
             updated_geometry = ogr.Geometry(ogr.wkbPoint)
             updated_geometry.AddPoint_2D(repre_data['x_lucas'], repre_data['y_lucas'])
             save_point(updated_geometry, outputs['updated_points']['ds_layer'], output_fields)
@@ -748,7 +706,6 @@ def process_single_tile(config):
 
         feature = lucas_layer.GetNextFeature()
 
-    # print(output_fields)
     # close and save outputs
     save_outputs(outputs)
     lucas_ds = None
@@ -762,7 +719,7 @@ def process_tiles(args):
     """
     start = time.time()
     dst_dir = os.path.join(args.dst_dir, 'v' + str(args.version))
-    # print(dst_dir)
+
     if not os.path.isdir(dst_dir):
         os.makedirs(dst_dir)
 
@@ -774,7 +731,7 @@ def process_tiles(args):
     logging.info('Region Grow Process')
     logging.info('---')
 
-    # Translation tables
+    # translation tables
     lc_mappings = {
         'sim_tab': read_semantic_similarity(tables['similarity_fn']),
         'lucas_lc1_2_osm': read_yaml(tables['lc1_2_osm_fn']),
@@ -784,15 +741,14 @@ def process_tiles(args):
         'osm_names': read_yaml(tables['osm_names_fn']),
         'lc_codes_names': read_yaml(tables['lc_codes_names_fn'])
     }
-    # Process info
+    # process info
     logging.info(f'Number of tiles to process: {len(tiles)}')
     logging.info(f'Number of CPUs: {multiprocessing.cpu_count()}')
     logging.info(f'Number of workers to run: {args.workers}')
     logging.info('---')
 
-    # TODO: remove not!
     if args.workers > 1:
-        # Joblib parallelization
+        # joblib parallelization
         logging.info(f'Number of tiles to process: {len(tiles)} for {args.tiles_dir}')
         Parallel(n_jobs=args.workers, backend="threading", verbose=10)(
             delayed(process_single_tile)([t, args.lucas_points, args.lucas_thr_points, dst_dir, selected_points, lc_mappings, args]) for t in tiles)
@@ -801,7 +757,7 @@ def process_tiles(args):
         for t in tiles:
             process_single_tile([t, args.lucas_points, args.lucas_thr_points, dst_dir, selected_points, lc_mappings, args])
 
-    # CLOSING THE INPUT VECTOR DATA
+    # closing the input vector data
     end = time.time()
     logging.info(f"Process duration: {round((end - start) / 60., 2)} minutes.")
 
