@@ -10,7 +10,7 @@ gdal.UseExceptions()
 # avoid Warning 1: Unable to save auxiliary information in...
 gdal.SetConfigOption('GDAL_PAM_ENABLED', 'NO')
 
-from .representativeness_exceptions import ConfigError, IllegalArgumentError
+from .exceptions import ConfigError, IllegalArgumentError
 
 def open_LUCAS_points(lucas_points_fn):
     """Open LUCAS vector file.

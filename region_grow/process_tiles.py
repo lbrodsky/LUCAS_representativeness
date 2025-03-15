@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from region_grow.read_data import *
 from region_grow.data_utils import *
 from region_grow.region_grow import Point, RegionGrow
-from region_grow.representativeness_exceptions import ConfigError, IllegalArgumentError
+from region_grow.exceptions import ConfigError, IllegalArgumentError
 
 # constants
 RAD2DEGREE = 180 / math.pi
