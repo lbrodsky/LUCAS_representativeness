@@ -47,14 +47,13 @@ class TestSample:
         assert ds is not None
         assert ds.GetDriver().GetName() == "GPKG"
 
-        assert ds.GetLayerCount() == 4
-
         ref = {
             "lucas_points_buffer": "Polygon",
             "lucas_region_grow": "Polygon",
-            "lucas_urban_grow": "Polygon",
             "lucas_original_points": "Point"
         }
+        assert ds.GetLayerCount() == len(ref.keys())
+
         for lyr in ds:
             assert lyr.GetName() in ref.keys()
             assert ogr.GeometryTypeToName(lyr.GetGeomType()) == ref[lyr.GetName()]

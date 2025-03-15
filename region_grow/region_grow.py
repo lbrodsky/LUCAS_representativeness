@@ -184,16 +184,3 @@ class RegionGrow(object):
         logging.debug(f"Size of object: {np.sum(seedmark_last)} (px).")
 
         return seedmark_last, rect_last
-
-
-class UrbanGrow:
-    def __init__(self, image, osm_code):
-        self.image = image
-        self.osm_code = osm_code
-
-    def grow(self):
-        """Run urban region grow, spatial selection of urban class within given patch.
-
-        :return: binary image with the urban region pixels labeled
-        """
-        return (self.image == self.osm_code) * 1

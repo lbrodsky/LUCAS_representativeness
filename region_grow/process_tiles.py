@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from region_grow.read_data import *
 from region_grow.data_utils import *
-from region_grow.region_grow import Point, RegionGrow, UrbanGrow
+from region_grow.region_grow import Point, RegionGrow
 from region_grow.representativeness_exceptions import ConfigError, IllegalArgumentError
 
 # constants
@@ -385,15 +385,6 @@ def get_grown_region(x_array, y_array, tile_img, region_max_size, pixel_size, sh
     return patch, grown_point, rect
 
 
-def get_urban_region(lucas_osm_code, osm_code, patch):
-    """Run urban region grow, spatial subset of urban classes within the patch area.
-    """
-    if lucas_osm_code == 1 or lucas_osm_code == 2:
-        ug = UrbanGrow(patch, osm_code)
-        return ug.grow()
-    return None
-
-
 def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields, tile_img, srs, geo_transform, point_id,
                    lc_mappings, lc1, region_max_size, pixel_size, shp_thr, threshold, connectivity,
                    obs_direct, max_multiplier):
@@ -427,7 +418,6 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
 
     # init
     grown_point = None
-    urban_repre = None
     # pt_update = 0 pt_update is solved in data_utils.py
     prec_multiplier = 1
     max_similarity = 0
@@ -444,9 +434,6 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
         patch, grown_point, rectangularity = get_grown_region(x_array, y_array, tile_img, region_max_size, pixel_size,
                                                               shp_thr, threshold, connectivity)
 
-        # urban region grow segments all urban regions (e.g. buildings) with the Patch
-        # this version is applied as RG can grow into tine regions, e.g. one small building - imbalance
-        urban_repre = get_urban_region(lucas_osm_code, osm_codes[0], patch)
         osm_lc_l1 = lc_mappings['osm_2_lc'][osm_codes[0]]
 
     else:
@@ -497,8 +484,6 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
                     except IndexError:
                         raise IndexError(f'RG error at point {point_id}')
 
-                    urban_repre = get_urban_region(lucas_osm_code, osm_code_seed, patch)
-
                     # update the x, y geo coordinates based on shifted patch
                     x_lucas, y_lucas = array_to_xy(geo_transform, x_array, y_array, pixel_size)
                     osm_lc_l1 = lc_mappings['osm_2_lc'][osm_code_seed]
@@ -525,7 +510,6 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
             'grown_point': grown_point,
             'patch': patch,
             'x_array': x_array, 'y_array': y_array,
-            'urban_repre': urban_repre,
             'prec_multiplier': prec_multiplier,
             'x_lucas': x_lucas, 'y_lucas': y_lucas
             }
@@ -567,7 +551,7 @@ def process_single_tile(config):
     srs.ImportFromWkt(img_ds.GetProjectionRef())
     tile_id = os.path.basename(t).split('.')[0]
     outputs = define_outputs(output_dir, tile_id, ['region_grow', 'nomatch_points', 'points_buffer',
-                                                   'original_points', 'urban_grow', 'updated_points'],
+                                                   'original_points', 'updated_points'],
                              srs, define_fields())
 
     # cycle over selected LUCAS points and run Region Grow
@@ -683,10 +667,6 @@ def process_single_tile(config):
             # save vectors based on grown_point numpy array and return the RG geometry
             vectorize_grown_point(repre_data['grown_point'], outputs['region_grow']['ds_layer'], patch_geo_transform,
                                   img_ds.GetProjectionRef(), output_fields, geometry, shp_generalize_dist)
-            vectorize_grown_point(repre_data['urban_repre'] if repre_data['urban_repre'] is not None else repre_data['grown_point'],
-                                  outputs['urban_grow']['ds_layer'], patch_geo_transform,
-                                  img_ds.GetProjectionRef(), output_fields, geometry, shp_generalize_dist,
-                                  urban=repre_data['urban_repre'] is not None)
 
             logging.info(f'POINT ID: {point_id} | multiplier: {repre_data["prec_multiplier"]} | buffer: {repre_data["prec_multiplier"] * gps_prec_val}'
                          f' | tile: {os.path.basename(t)}')

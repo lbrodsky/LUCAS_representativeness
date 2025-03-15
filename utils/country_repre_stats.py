@@ -31,7 +31,7 @@ def main(dir, dst_path, version, products):
     # countries = ['eu']
     v_max = version # int(os.path.basename(dir).split('_')[-1][1:])
 
-    gpkg_products = ['lucas_region_grow', 'lucas_urban_grow',
+    gpkg_products = ['lucas_region_grow',
                      'lucas_updated_points', 'lucas_points_buffer',
                      'lucas_original_points', 'lucas_nomatch_points']
 
@@ -122,9 +122,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # products = ['*_lucas_region_grow.shp', '*_lucas_urban_grow.shp',
-    #             '*_lucas_updated_points.shp', '*_lucas_points_buffer.shp',
-    #             '*_lucas_original_points.shp', '*_lucas_nomatch_points.shp']
     products = ['*_lucas_region_grow.gpkg']
 
     main(args.src_dir, args.dst_dir, args.version, products)

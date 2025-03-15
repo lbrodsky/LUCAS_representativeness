@@ -85,7 +85,7 @@ def create_layer(vector_path, layer_name, srs, field_defs):
                                      srs=srs, options=["OVERWRITE=YES"])
 
     field_exclude = []
-    if layer_name not in ('lucas_region_grow', 'sentinel2_region_grow', 'lucas_urban_grow'):
+    if layer_name not in ('lucas_region_grow', 'sentinel2_region_grow'):
         field_exclude = ['lc_update_def', 'unc', 'pup']
 
     for k, v in field_defs.items():
@@ -185,8 +185,7 @@ def geom_max_area(rg_geometry):
     return rg_geometry.GetGeometryRef(idx)
 
 def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, output_fields, lucas_geometry,
-                          shp_generalize_dist, shp_generalize_min_ratio=0.3,
-                          urban=False):
+                          shp_generalize_dist, shp_generalize_min_ratio=0.3):
     """Convert the NumPy grown region into vector.
     """
     def update_geom_fields(rg_geometry):
@@ -227,38 +226,34 @@ def vectorize_grown_point(grown_point, out_rg_layer, geo_transform, geo_proj, ou
 
     # is applied due to 8CONNECTED=8
     out_rg_layer.ResetReading()
-    if not urban:
-        # non-urban: remove small polygonized features
-        out_rg_layer.SetAttributeFilter('point_id = 1')
 
-        rg_feat_area = {}
-        if out_rg_layer.GetFeatureCount() > 1:
-            rg_area_max = -1
-            rg_fid_max = -1
-            while True:
-                rg_feat = out_rg_layer.GetNextFeature()
-                if rg_feat is None:
-                    break
-                rg_fid = rg_feat.GetFID()
-                rg_area = rg_feat.GetGeometryRef().GetArea()
-                if rg_area > rg_area_max:
-                    rg_area_max = rg_area
-                    rg_fid_max = rg_fid
-                rg_feat_area[rg_fid] = rg_area
+    # remove small polygonized features
+    out_rg_layer.SetAttributeFilter('point_id = 1')
 
-            rg_feat = out_rg_layer.GetFeature(rg_fid_max)  # process feature with max area
-        else:
+    rg_feat_area = {}
+    if out_rg_layer.GetFeatureCount() > 1:
+        rg_area_max = -1
+        rg_fid_max = -1
+        while True:
             rg_feat = out_rg_layer.GetNextFeature()
+            if rg_feat is None:
+                break
+            rg_fid = rg_feat.GetFID()
+            rg_area = rg_feat.GetGeometryRef().GetArea()
+            if rg_area > rg_area_max:
+                rg_area_max = rg_area
+                rg_fid_max = rg_fid
+            rg_feat_area[rg_fid] = rg_area
 
-        # delete small polygonized features if exists and unset filter
-        for fid in rg_feat_area.keys():
-            if fid != rg_fid_max:
-                out_rg_layer.DeleteFeature(fid)
-        out_rg_layer.SetAttributeFilter('')
-
+        rg_feat = out_rg_layer.GetFeature(rg_fid_max)  # process feature with max area
     else:
-        # urban: convert polygonized features into multipolygon feature
-        rg_feat = convert_polygons2multi(out_rg_layer)
+        rg_feat = out_rg_layer.GetNextFeature()
+
+    # delete small polygonized features if exists and unset filter
+    for fid in rg_feat_area.keys():
+        if fid != rg_fid_max:
+            out_rg_layer.DeleteFeature(fid)
+    out_rg_layer.SetAttributeFilter('')
 
     rg_geometry = rg_feat.GetGeometryRef()
     # make geometry valid
