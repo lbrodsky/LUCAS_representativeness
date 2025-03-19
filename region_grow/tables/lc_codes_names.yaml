@@ -1,13 +1,11 @@
-1: 'artifical land '# 'roofed built-up'
-2: 'cropland' # 'artificial non-built-up'
-3: 'permanent'   # 4
-4: 'woodland' # C10 - Broadleaved / 'permanent'  # 5
-5: 'shrubland' # '-' # C20 - Coniferous / 'woodland'   # 6
-6: 'grassland' # '-' # C30 - Mixed / 'shrubland'  # 7
-7: 'bare'  # 'grassland'  # 8
-8:  'water' # 'bare'       # 9
-9:  'glacier' # 'water'      # 10
-10:  'wetlands' # 'glacier'   # 11
-11:  'others'   # 'wetlands'  # 12
-# 12:
-# 3: 'other artificial'
+1: 'artifical land'
+2: 'cropland'
+3: 'permanent'
+4: 'woodland'
+5: 'shrubland'
+6: 'grassland'
+7: 'bare'
+8: 'water'
+9: 'glacier'
+10: 'wetlands'
+11: 'others'

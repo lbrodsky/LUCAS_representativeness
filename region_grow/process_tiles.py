@@ -81,7 +81,7 @@ def prepare_inputs(args):
         selected_points = args.selected_points.split(',')
 
     tables = {
-        'similarity_fn': os.path.join(args.tables_dir, 'semsim_l3_v3.csv'),
+        'similarity_fn': os.path.join(args.tables_dir, 'semsim_l3.csv'),
         'lc1_2_lc_fn': os.path.join(args.tables_dir, 'lucas_lc1_to_lc.yaml'),
         'lc1_2_osm_fn': os.path.join(args.tables_dir, 'lucas_lc1_to_osm.yaml'),
         'lc1_codes_2_names_fn': os.path.join(args.tables_dir, 'lc1_h.csv'),
