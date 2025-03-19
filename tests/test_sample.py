@@ -28,12 +28,9 @@ class TestSample:
         parser = define_parser()
         args = parser.parse_args([
             '--tiles_dir', '/data/tiles',
-            '--tables_dir', '/opt/region_grow/tables',
             '--lucas_points', '/data/sample_points.gpkg',
             '--lucas_thr_points', '/data/sample_thr_points.gpkg',
             '--dst_dir', fixture['output_path'],
-            '--shp_thr', '0.5',
-            '--region_max_size', '100',
             '--version', str(fixture['version'])
         ])
         process_tiles(args)

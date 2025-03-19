@@ -48,15 +48,8 @@ def init_logging(dst_dir, args):
     logging.info('Parameter settings')
     logging.info('---')
     logging.info(f'Process will be logged into: {log_file}')
-    logging.info(f'Processing version: {args.version}')
-    logging.info(f'Destination directory: {dst_dir}')
-    logging.info(f'Processing tiles directory: {args.tiles_dir}')
-    logging.info(f'Selected point(s): {args.selected_points}')
-    logging.info(f'Shape threshold: {args.shp_thr}')
-    logging.info(f'Shape generalization distance: {args.shp_generalize_dist}')
-    logging.info(f'Region max. size: {args.region_max_size}')
-    logging.info(f'Translation and similarity tables: {args.tables_dir}')
-
+    for arg, value in vars(args).items():
+        logging.info(f"{arg}: {value}")
 
 def prepare_inputs(args):
     """Prepare variables for input tiles, point filter and translation tables.
@@ -540,10 +533,9 @@ def process_single_tile(config):
     # open ST_LUCAS point layer
     lucas_ds, lucas_layer = open_LUCAS_points(lucas_fn) 
     feature_count = select_LUCAS_points(img_ds, lucas_layer)
-    logging.info(f"Selected features from {os.path.basename(t)}: {feature_count}")
-    logging.info('---')
     # open ST_LUCAS theoretical point layer
     lucas_thr_ds, lucas_thr_layer = open_LUCAS_points(lucas_thr_fn)
+    logging.info(f"Selected features from {os.path.basename(t)}: {feature_count}")
     logging.info('---')
 
     # define outputs
@@ -698,8 +690,10 @@ def process_tiles(args):
     with region Grow algorithm for all given tiles.
     """
     start = time.time()
-    dst_dir = os.path.join(args.dst_dir, 'v' + str(args.version))
+    if (args.tables_dir is None):
+        args.tables_dir = str(Path(__file__).parent / "tables")
 
+    dst_dir = os.path.join(args.dst_dir, 'v' + str(args.version))
     if not os.path.isdir(dst_dir):
         os.makedirs(dst_dir)
 
@@ -729,7 +723,7 @@ def process_tiles(args):
 
     if args.workers > 1:
         # joblib parallelization
-        logging.info(f'Number of tiles to process: {len(tiles)} for {args.tiles_dir}')
+        logging.info(f'Number of tiles to process: {len(tiles)}')
         Parallel(n_jobs=args.workers, backend="threading", verbose=10)(
             delayed(process_single_tile)([t, args.lucas_points, args.lucas_thr_points, dst_dir, selected_points, lc_mappings, args]) for t in tiles)
     else:
@@ -744,31 +738,50 @@ def process_tiles(args):
 
 def define_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--tiles_dir', type=str, help='Directory with OSM rasterized tiles.')
-    parser.add_argument('-l', '--lucas_points', metavar='lucas_points', type=str, help='LUCAS points filename.')
-    parser.add_argument('-lt', '--lucas_thr_points', metavar='lucas_thr_points', type=str, help='LUCAS theoretical points.')
-    parser.add_argument('-s', '--selected_points', metavar='selected_points', nargs='?', const='', type=str,
-                        help='List of selected points to be processed.')
-    parser.add_argument('-st', '--selected_tiles', type=str, help='List of selected tiles to be processed.')
-    parser.add_argument('-c', '--shp_thr', metavar='shp_thr', type=float, nargs='?', const=0.7,
+    parser.add_argument('--tiles_dir',
+                        type=str, required=True,
+                        help='Directory with OSM rasterized tiles.')
+    parser.add_argument('--lucas_points',
+                        type=str, required=True,
+                        help='LUCAS points filename.')
+    parser.add_argument('--lucas_thr_points',
+                        type=str, required=True,
+                        help='LUCAS theoretical points.')
+    parser.add_argument('--selected_points',
+                        nargs='?', type=str,
+                        help='List of selected points (separated by comma) to be processed.')
+    parser.add_argument('--selected_tiles',
+                        nargs='?', type=str,
+                        help='List of selected tiles (separated by comma) to be processed.')
+    parser.add_argument('--shp_thr',
+                        type=float, default=0.5,
                         help='Region grow shape threshold.')
-    parser.add_argument('-max', '--region_max_size', metavar='region_max_size', type=int, nargs='?', const=200,
+    parser.add_argument('--region_max_size',
+                        type=int, default=100,
                         help='Maximum size of region.')
-    parser.add_argument('-tdir', '--tables_dir', metavar='tables_dir', type=str, required=True,
-                        default= './ctu-geoharmonizer/land-cover/lucas/representativeness/region_grow/tables',
-                        help='Directory of translation and similarity tables.')
-    parser.add_argument('-v', '--version', metavar='version', type=int, help='Version of the RG run.')
-    parser.add_argument('-d', '--dst_dir', metavar='dst_dir', type=str,
+    parser.add_argument('--tables_dir',
+                        type=str,
+                        help='Directory of translation and similarity tables (default: tables).')
+    parser.add_argument('--version',
+                        type=int, required=True,
+                        help='Version of the RG run.')
+    parser.add_argument('--dst_dir',
+                        type=str, required=True,
                         help='Target directory where the results are stored.')
-    parser.add_argument('-w', '--workers', metavar='workers', type=int, default=12,
+    parser.add_argument('--workers',
+                        type=int, default=8,
                         help='Number of workers for parallel CPU processing.')
-    parser.add_argument('-n', '--connectivity', metavar='connectivity', type=int, default=8,
+    parser.add_argument('--connectivity',
+                        type=int, default=8,
                         help='Select 4 or 8 neigbouring pixels.')
-    parser.add_argument('-m', '--multiplier', metavar='max_multiplier', type=int, default=3,
+    parser.add_argument('--multiplier',
+                        type=int, default=3,
                         help='Set max multiplier for extending buffer zone around point.')
-    parser.add_argument('-sg', '--shp_generalize_dist', type=int, default=6,
+    parser.add_argument('--shp_generalize_dist',
+                        type=int, default=6,
                         help='Set distance for shape generalization (<= 0 to disable).')
-    parser.add_argument('-log_lvl', '--log_level', metavar='log_level', type=str, choices=('info', 'debug'),
+    parser.add_argument('--log_level',
+                        type=str, choices=('info', 'debug'),
                         default='info', help='Logging level.')
 
     return parser
