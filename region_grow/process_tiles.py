@@ -748,17 +748,17 @@ def define_parser():
                         type=str, required=True,
                         help='LUCAS theoretical points.')
     parser.add_argument('--selected_points',
-                        nargs='?', type=str,
+                        type=str,
                         help='List of selected points (separated by comma) to be processed.')
     parser.add_argument('--selected_tiles',
-                        nargs='?', type=str,
+                        type=str,
                         help='List of selected tiles (separated by comma) to be processed.')
     parser.add_argument('--shp_thr',
                         type=float, default=0.5,
-                        help='Region grow shape threshold.')
+                        help='Region grow shape threshold (default: %(default)s).')
     parser.add_argument('--region_max_size',
                         type=int, default=100,
-                        help='Maximum size of region.')
+                        help='Maximum size of region (default: %(default)s).')
     parser.add_argument('--tables_dir',
                         type=str,
                         help='Directory of translation and similarity tables (default: tables).')
@@ -770,19 +770,19 @@ def define_parser():
                         help='Target directory where the results are stored.')
     parser.add_argument('--workers',
                         type=int, default=8,
-                        help='Number of workers for parallel CPU processing.')
+                        help='Number of workers for parallel CPU processing (default: %(default)s).')
     parser.add_argument('--connectivity',
                         type=int, default=8,
-                        help='Select 4 or 8 neigbouring pixels.')
+                        help='Select 4 or 8 neigbouring pixels (default: %(default)s).')
     parser.add_argument('--multiplier',
                         type=int, default=3,
-                        help='Set max multiplier for extending buffer zone around point.')
+                        help='Set max multiplier for extending buffer zone around point (default: %(default)s).')
     parser.add_argument('--shp_generalize_dist',
                         type=int, default=6,
-                        help='Set distance for shape generalization (<= 0 to disable).')
+                        help='Set distance for shape generalization (<= 0 to disable) (default: %(default)s).')
     parser.add_argument('--log_level',
                         type=str, choices=('info', 'debug'),
-                        default='info', help='Logging level.')
+                        default='info', help='Logging level (default: %(default)s).')
 
     return parser
 
