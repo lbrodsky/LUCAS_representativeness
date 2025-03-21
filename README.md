@@ -56,3 +56,18 @@ docker exec -ti lucas-postgis bash /opt/utils/extract_lucas_points.sh 2018
 docker stop lucas-postgis
 docker rm lucas-postgis
 ```
+
+Download OSM/CLC+ product (TBD):
+
+```
+mkdir -p data/osm_clcplus/2018/
+wget ...
+(cd data/osm_clcplus/2018/; for f in *.7z; do 7z x $f; done)
+```
+
+Perform computation:
+
+```
+./utils/run_docker.sh ./data
+```
+
