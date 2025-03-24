@@ -39,8 +39,23 @@ def comp_tiles(l_tile, r_tile):
         return False
     
     for l_feat in l_layer:
-        r_feat = l_layer.GetNextFeature()
-        
+        point_id = l_feat.GetField('point_id')
+        r_layer.SetAttributeFilter(f"point_id = {point_id}")
+        r_layer.ResetReading()
+        r_feat = r_layer.GetNextFeature()
+
+        for i in range(l_feat.GetFieldCount()):
+            l_field_name = l_feat.GetFieldDefnRef(i).GetName()
+            l_field_value = l_feat.GetField(i)
+            r_field_value = r_feat.GetField(l_field_name)
+            if str(l_field_value) != str(r_field_value): # avoid field type mismatch
+                print(f"Field ({l_field_name}) mismatch: {l_field_value} vs {r_field_value} [{r_ds.GetName()}: {point_id}]!")
+                return False
+
+            if abs(l_feat.GetGeometryRef().GetArea() - r_feat.GetGeometryRef().GetArea()) > 1e-12:
+                print(f"Point id {point_id} area mismatch!")
+                return False
+
     l_ds = r_ds = None
 
 def open_layer(tile):
