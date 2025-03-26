@@ -1,14 +1,24 @@
 # LUCAS representativeness
 
-Code to compute LUCAS representativeness regions.
+Code to compute spatially representative areas. Original
+shape-constrained region-growing algorithm was specifically designed
+to enhance the accuracy and consistency of machine learning approaches
+for land cover and land use mapping by ensuring that the delineated
+areas accurately represent the surrounding landscape. The algorithm
+takes as input the OSM/CLC+ land cover product (ZENODO TBD), which
+provides a harmonized and detailed land cover dataset suitable for
+large-scale analysis.
 
-## Build Docker image and run on sample data
+The tool is demonstrated on LUCAS points in 2018 retrieved from
+[ST_LUCAS](https://geoforall.fsv.cvut.cz/st_lucas/) system.
 
-Build docker image:
+## Build Docker image
 
 ```
 docker build --tag lucas_representativeness:latest docker/
 ```
+
+## Run on sample data
 
 Run Docker container on sample data:
 
@@ -35,7 +45,7 @@ docker run --rm  --user `id -u` \
  python3 -m pytest /opt/tests/test_sample.py
 ```
 
-## Full EU coverage computation
+## Run complete EU coverage computation
 
 ### Data preparation
 
@@ -65,9 +75,8 @@ wget ...
 (cd data/osm_clcplus/2018/; for f in *.7z; do 7z x $f; done)
 ```
 
-Perform computation:
+### Perform computation
 
 ```
 ./utils/run_docker.sh ./data
 ```
-
