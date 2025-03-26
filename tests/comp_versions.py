@@ -23,20 +23,22 @@ def main(dir_left, dir_right):
     print(f"Tiles processed: {count}")
     print(f"Mismatch: {mismatch}")
 
-def comp_tiles(l_tile, r_tile):
+def comp_tiles(l_tile, r_tile, epsilon=1e-3):
     l_ds, l_layer = open_layer(str(l_tile))
     r_ds, r_layer = open_layer(str(r_tile))
 
+    success = True
+
     if l_layer is None and r_layer is None:
-        return True
+        return success
 
     if (l_layer is None and r_layer is not None) or (l_layer is not None and r_layer is None):
         print(f"Layer mismatch (left:{l_layer}, {r_ds.GetName()}:{r_layer}")
-        return False
+        success = False
         
     if l_layer.GetFeatureCount() != r_layer.GetFeatureCount():
         print(f"Feature count mismatch ({l_layer.GetFeatureCount()}x{r_layer.GetFeatureCount()}: {r_ds.GetName()})!")
-        return False
+        success = False
     
     for l_feat in l_layer:
         point_id = l_feat.GetField('point_id')
@@ -44,19 +46,46 @@ def comp_tiles(l_tile, r_tile):
         r_layer.ResetReading()
         r_feat = r_layer.GetNextFeature()
 
+        # check attributes
         for i in range(l_feat.GetFieldCount()):
             l_field_name = l_feat.GetFieldDefnRef(i).GetName()
             l_field_value = l_feat.GetField(i)
             r_field_value = r_feat.GetField(l_field_name)
-            if str(l_field_value) != str(r_field_value): # avoid field type mismatch
-                print(f"Field ({l_field_name}) mismatch: {l_field_value} vs {r_field_value} [{r_ds.GetName()}: {point_id}]!")
-                return False
 
-            if abs(l_feat.GetGeometryRef().GetArea() - r_feat.GetGeometryRef().GetArea()) > 1e-12:
+            l_field_defn = l_layer.GetLayerDefn().GetFieldDefn(i)
+            l_field_type = l_field_defn.GetType()
+            r_field_defn = r_layer.GetLayerDefn().GetFieldDefn(r_layer.GetLayerDefn().GetFieldIndex(l_field_name))
+            r_field_type = r_field_defn.GetType()
+
+            if l_field_type != r_field_type: # avoid field type mismatch
+                mismatch = str(l_field_value) != str(r_field_value)
+            else:
+                if l_field_type == ogr.OFTReal:
+                    mismatch = abs(l_field_value - r_field_value) > epsilon
+                else:
+                    mismatch = l_field_value != r_field_value
+
+            if mismatch is True:
+                print(f"Field ({l_field_name}) mismatch: {l_field_value} vs {r_field_value} [{r_ds.GetName()}: {point_id}]!")
+                success = False
+
+            # check geometry
+            l_geom = l_feat.GetGeometryRef()
+            r_geom = r_feat.GetGeometryRef()
+            if abs(l_geom.GetArea() - r_geom.GetArea()) > 1e-12:
                 print(f"Point id {point_id} area mismatch!")
-                return False
+                success = False
+
+            if l_geom.Equal(r_geom) is False:
+                print(f"Point id {point_id} geom mismatch!")
+                success = False
+
+        # if success is False:
+        #     break
 
     l_ds = r_ds = None
+
+    return success
 
 def open_layer(tile):
     ds = ogr.Open(tile)
