@@ -79,7 +79,7 @@ class TestSample:
                 "obs_type": 1,
                 "obs_dist": 3,
                 "gps_prec": 4,
-                "lc": 4,
+                "lc": 5,
                 "similarity": 2,
                 "point_update": 0,
                 "rectangularity": 0.513,
