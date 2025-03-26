@@ -23,7 +23,7 @@ def main(dir_left, dir_right):
     print(f"Tiles processed: {count}")
     print(f"Mismatch: {mismatch}")
 
-def comp_tiles(l_tile, r_tile, epsilon=1e-3):
+def comp_tiles(l_tile, r_tile, epsilon=1e-12):
     l_ds, l_layer = open_layer(str(l_tile))
     r_ds, r_layer = open_layer(str(r_tile))
 
