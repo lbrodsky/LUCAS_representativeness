@@ -1,37 +1,36 @@
 'A1': 1
-'A2': 2 # corr.
-'A3': 12 # corr.
-'B1': 3 # corr.
-'B2': 3 # corr.
-'B3': 3 # corr.
-'B4': 3 # corr.
-'B5': 3 # corr.
-'Bx1': 3 # corr.
-'Bx': 3 # corr.
-'Bx2': 3 # corr.
-'B7': 4 # corr.
-'B8': 4 # corr.
-'C1': 5 # corr.
-'C2': 5 # corr.
-'C3': 5 # corr.
-'Cx': 5 # corr.
-'D1': 6 # corr
-'D2': 6 # corr.
-'Dx': 6 # corr.
-'E1': 7 # corr.
-'E2': 7 # corr.
-'E3': 7 # corr.
-'F1': 8 # corr.
-'F2': 8 # corr.
-'F3': 8 # corr.
-'F4': 8 # corr.
-'Fx': 8 # corr.
-'G1': 9 # corr.
-'G2': 9 # corr.
-'G3': 9 # corr.
-'G4': 9 # corr.
-'Gx': 9 # corr.
-'G5': 10 # corr.
-'H1': 11 # corr.
-'H2': 11 # corr.
-'X0': 12
+'A2': 2
+'A3': 2
+'B1': 3
+'B2': 3
+'B3': 3
+'B4': 3
+'B5': 3
+'Bx1': 3
+'Bx': 3
+'Bx2': 3
+'B7': 4
+'B8': 4
+'C1': 5
+'C2': 5
+'C3': 5
+'Cx': 5
+'D1': 6
+'D2': 6
+'Dx': 6
+'E1': 7
+'E2': 7
+'E3': 7
+'F1': 8
+'F2': 8
+'F3': 8
+'F4': 8
+'Fx': 8
+'G1': 9
+'G2': 9
+'G3': 9
+'G4': 9
+'Gx': 9
+'G5': 10
+'H1': 11
+'H2': 11
