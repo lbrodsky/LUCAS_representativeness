@@ -1,35 +1,22 @@
 #!/usr/bin/env python3
 
 # Gridding representativness polygons to sensor spatial resolution, e.g. Sentinel-2 
-# TODO: Docker run
 
-import os 
-import glob
+import os
+import sys
 import argparse
-from shapely.geometry import Polygon
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+pd.options.mode.copy_on_write = True
 import geopandas as gpd
 import shapely
+from shapely.geometry import Polygon
 from shapely.ops import unary_union
+from pyogrio.errors import DataSourceError
 
-"""
-# Example: Sentinel-2 gridding  
-
-python3 ./utils/gridding_repre_polygons.py \
-    -s /lucas/lucas_RG_2018/ \
-    -d /lucas/lucas_RG_2018/ \
-    -g 10   
-    
-"""
-
-
-parser = argparse.ArgumentParser()
-parser = argparse.ArgumentParser(description='LC nomenclature without class 13 (others)')
-parser.add_argument('-s', '--src_path', metavar='src_path', type=str, help='Path to directory with source files')
-parser.add_argument('-d', '--dst_path', metavar='dst_path', type=str, help='Path to directory with source files')
-parser.add_argument('-g', '--grid_size', metavar='grid_size', default=10, type=int, help='Grid/pixel size of target sensor')
-args = parser.parse_args()
-
+from utils import latest_version
 
 def grid_bounds(geom, size):
     """Get gridding bounds. 
@@ -75,18 +62,19 @@ def remove_small(grid, grid_size):
     return grid_s2
 
 
-def main(repre, dst_path, grid_size=10):
+def main(tile, dst_path, grid_size=10):
     """Gridding repre polygons main process.
     """
+    try:
+        repre_poly = gpd.read_file(tile, layer="lucas_region_grow")
+    except DataSourceError:
+        return # skip empty files
 
-    repre_poly = gpd.read_file(repre)
-    repre_poly_s2 = repre_poly.copy()
+    repre_poly_gridded = repre_poly.head(0)
 
     # loop over features
-    i = 0
     for feature_ix in range(len(repre_poly)):
-        i += 1
-        print(f'Point ID: {repre_poly.loc[feature_ix, "point_id"]} | {i}/{repre_poly.shape[0]}')
+        print(f'Point ID: {repre_poly.loc[feature_ix, "point_id"]} | {feature_ix+1}/{repre_poly.shape[0]}', file=sys.stderr)
         # get selected feature geom
         repre_geom = repre_poly.loc[feature_ix, 'geometry']
         # create grid witin repre polygon
@@ -96,49 +84,60 @@ def main(repre, dst_path, grid_size=10):
         # merge Sentinel-2 polygon pixels
         merged_grid_s2 = unary_union(grid_s2)
         # replace original repre polygon with S2 polygon
-        repre_poly_s2.loc[feature_ix, "geometry"] = merged_grid_s2
+        if merged_grid_s2.geom_type != 'Polygon':
+            nparts = len(merged_grid_s2.geoms)
+            if nparts == 0:
+                continue # skip empty features
 
+            # take polygon with largest area
+            sel_idx = -1
+            area_max = -1
+            for idx, p in enumerate(merged_grid_s2.geoms):
+                if p.area > area_max:
+                    sel_idx = idx
+
+            merged_grid_s2 = merged_grid_s2.geoms[sel_idx]
+
+        new_repre_poly = repre_poly.loc[feature_ix].copy()
+        new_repre_poly["geometry"] = merged_grid_s2
+        repre_poly_gridded.loc[len(repre_poly_gridded)] = new_repre_poly.dropna(axis=1, how="all")
+
+    print(f"Number of skipped features: {len(repre_poly)-len(repre_poly_gridded)}",
+          file=sys.stderr)
 
     # save result
-    if os.path.basename(repre).split('.')[-1] == 'shp':
-        repre_poly_s2.to_file(repre.replace('.shp', '_s2.gpkg'), driver="GPKG")
-    elif os.path.basename(repre).split('.')[-1] == 'gpkg':
-        repre_poly_s2.to_file(repre.replace('.gpkg', '_s2.gpkg'), driver="GPKG")
-    else:
-        print('Differernt file format!')
-
+    repre_poly_gridded.set_crs(repre_poly.crs)
+    repre_poly_gridded.set_crs(repre_poly.crs).to_file(tile, layer="lucas_region_grow_gridded", driver="GPKG")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='LC nomenclature without class 13 (others)')
+    parser.add_argument('--src_path', type=str, required=True,
+                        help='Path to directory with source files')
+    parser.add_argument('--version', type=int,
+                        help='Version to process (default: latest)')
+    parser.add_argument('--dst_path', type=str, required=True,
+                        help='Path to target directory')
+    parser.add_argument('--grid_size', default=10, type=int,
+                        help='Grid/pixel size of target sensor')
 
     args = parser.parse_args()
-    cfg = {}
-    cfg['src_path'] = args.src_path
-    cfg['dst_path'] = args.dst_path
-    # cfg['src_path'] = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow/rectangularity/cz_v33/test'
-    # cfg['dst_path'] = '/Users/lukas/Work/prfuk/ownCloud/tmp/lucas/RegionGrow/rectangularity/cz_v33/test/Sentinel-2'
 
-    # PARAMS
-    cfg['grid_size'] = args.grid_size
-    # cfg['grid_size'] =  10.0
-    shp_fn = None
-
+    if args.version is None:
+        version = latest_version(Path(args.src_path).glob("*"))
+    else:
+        version = args.version
+    
     try:
-        shp_fn = glob.glob(os.path.join(cfg['src_path'], '*region_grow*.shp'))
+        gpkg_fn = list(Path(args.src_path).rglob(f'v{version}/*.gpkg'))
     except:
-        print('No original region grow files avialble.')
-    if shp_fn == []:
-        try:
-            shp_fn = glob.glob(os.path.join(cfg['src_path'], '*region_grow_recoded.gpkg'))
-        except:
-            print('No recodded region grow files.')
+        print('No original region grow files available.')
 
-    if not shp_fn:
-        print('RG not available, use COP')
-        shp_fn = glob.glob(os.path.join(cfg['src_path'], '*COP_2018.gpkg'))
-
-    shp_fn.sort()
-    for repre in shp_fn:
-        # print(repre)
-        # break
-        main(repre, cfg['dst_path'], cfg['grid_size'])
-        
+    count = len(gpkg_fn)
+    i = 0
+    for fn in sorted(gpkg_fn):
+        i += 1
+        print(f"Processing tile {i} of {count}...\n{fn}", file=sys.stderr)
+        main(fn, args.dst_path, args.grid_size)
+        if i == 3:
+            break
