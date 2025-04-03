@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import shutil
 import argparse
 from glob import glob
 from pathlib import Path
 
 from osgeo import gdal, ogr
+
+from utils import latest_version
 
 def feature_count(fn):
     ds = ogr.Open(fn)
@@ -54,7 +57,7 @@ def merge_geometries(dst_fn, dst_ds_eu, data_dir, vector_format="GPKG"):
 
     dst_ds = None
 
-def main(dirs, dst_dir):
+def main(dirs, dst_dir, version=None):
     """Merge representative areas and other products for all EU countries
     """
     basename = "lucas_representativeness"
@@ -62,20 +65,17 @@ def main(dirs, dst_dir):
 
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)
-
     dst_fn_eu = os.path.join(dst_dir, f"eu_{basename}.gpkg")
     dst_ds_eu = create_ds(dst_fn_eu)
     print(f'Generating: {dst_fn_eu}')
 
     for cntr in dirs:
-        versions = cntr.glob('v*')
-        v_max = 0
-        for v in versions:
-            v_num = int(v.name[1:])
-            if v_num > v_max: v_max = v_num
-        if v_max > 0:
-            src_dir = v.parent / f"v{v_max}"
-            code = os.path.basename(os.path.dirname(src_dir)).split('_')[2]
+        if version > 0:
+            src_dir = cntr / f"v{version}"
+            if not src_dir.exists():
+                print(f"WARNING: {src_dir} doesn't exists. Skipped.", file=sys.stderr)
+                continue
+            code = src_dir.parent.name.split('_')[0]
             dst_fn = os.path.join(dst_dir, f"{code}_{basename}.gpkg")
             print(f"Processing {src_dir}...")
             merge_geometries(dst_fn, dst_ds_eu, src_dir)
@@ -86,10 +86,20 @@ def main(dirs, dst_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--directory',
-                        required=True, help="Data directory")
-    parser.add_argument('--target',
-                        required=True, help="Target directory name")
+    parser.add_argument('--src_path', type=str, required=True,
+                        help='Path to directory with source files')
+    parser.add_argument('--version', type=int,
+                        help='Version to process (default: latest)')
+    parser.add_argument('--dst_path', type=str, required=True,
+                        help='Path to target directory')
     args = parser.parse_args()
-    
-    main(Path(args.directory).glob("*"), os.path.join(args.directory, args.target))
+
+    if args.version is None:
+        version = latest_version(Path(args.src_path).glob("*"))
+    else:
+        version = args.version
+
+    if Path(args.dst_path).exists():
+        shutil.rmtree(args.dst_path)
+
+    main(Path(args.src_path).glob("*"), args.dst_path, version)
