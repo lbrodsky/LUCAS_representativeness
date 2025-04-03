@@ -16,6 +16,8 @@ from shapely.wkt import loads
 
 from utils import latest_version
 
+ogr.UseExceptions()
+
 def grid_bounds(geom, size):
     """Get gridding bounds. 
     """ 
