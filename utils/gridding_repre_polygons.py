@@ -62,7 +62,7 @@ def remove_small(grid, grid_size):
     return grid_s2
 
 
-def main(tile, dst_path, grid_size=10):
+def main(tile, grid_size=10):
     """Gridding repre polygons main process.
     """
     layer_name = "lucas_region_grow"
@@ -126,12 +126,10 @@ def main(tile, dst_path, grid_size=10):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(description='LC nomenclature without class 13 (others)')
-    parser.add_argument('--src_path', type=str, required=True,
+    parser.add_argument('--data_path', type=str, required=True,
                         help='Path to directory with source files')
     parser.add_argument('--version', type=int,
                         help='Version to process (default: latest)')
-    parser.add_argument('--dst_path', type=str, required=True,
-                        help='Path to target directory')
     parser.add_argument('--grid_size', default=10, type=int,
                         help='Grid/pixel size of target sensor')
 
@@ -143,7 +141,7 @@ if __name__ == "__main__":
         version = args.version
     
     try:
-        gpkg_fn = list(Path(args.src_path).rglob(f'v{version}/*.gpkg'))
+        gpkg_fn = list(Path(args.data_path).rglob(f'v{version}/*.gpkg'))
     except:
         print('No original region grow files available.')
 
@@ -152,4 +150,4 @@ if __name__ == "__main__":
     for fn in sorted(gpkg_fn):
         i += 1
         print(f"Processing tile {i} of {count}...\n{fn}", file=sys.stderr)
-        main(fn, args.dst_path, args.grid_size)
+        main(fn,args.grid_size)

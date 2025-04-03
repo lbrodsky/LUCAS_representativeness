@@ -84,6 +84,12 @@ wget ...
 ### Postprocessing
 
 ```
-docker run --rm --user `id -u` -v `pwd`:/opt -v ./data:/data lucas_representativeness:latest \
- python3 /opt/utils/gridding_repre_polygons.py --src_path ./data/rg_repre_areas/2018/ --dst_path /tmp
+docker run --rm --user `id -u` \
+ -v `pwd`:/opt -v ./data:/data lucas_representativeness:latest \
+ python3 /opt/utils/gridding_repre_polygons.py \
+ --data_path ./data/rg_repre_areas/2018/
+```
+
+```
+docker run --rm --user 1001 -v /home/landamar/git/st_lucas/LUCAS_representativeness:/opt -v ./data:/data lucas_representativeness:latest  python3 /opt/utils/merge_countries.py --src_path ./data/rg_repre_areas/2018/ --dst_path ./data/rg_repre_areas/2018/merged
 ```
