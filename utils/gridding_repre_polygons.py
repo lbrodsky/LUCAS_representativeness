@@ -8,13 +8,11 @@ import argparse
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-pd.options.mode.copy_on_write = True
-import geopandas as gpd
+from osgeo import ogr
 import shapely
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from pyogrio.errors import DataSourceError
+from shapely.wkt import loads
 
 from utils import latest_version
 
@@ -65,18 +63,32 @@ def remove_small(grid, grid_size):
 def main(tile, dst_path, grid_size=10):
     """Gridding repre polygons main process.
     """
-    try:
-        repre_poly = gpd.read_file(tile, layer="lucas_region_grow")
-    except DataSourceError:
-        return # skip empty files
+    layer_name = "lucas_region_grow"
+    ds = ogr.Open(tile, update=True)
+    source_layer = ds.GetLayerByName(layer_name)
+    if source_layer is None:
+        return # skip empty tiles
 
-    repre_poly_gridded = repre_poly.head(0)
+    # Check if the layer exists and delete it
+    target_layer_name = f"{layer_name}_gridded"
+    if ds.GetLayerByName(target_layer_name):
+        ds.DeleteLayer(target_layer_name)
+    target_layer = ds.CreateLayer(target_layer_name, source_layer.GetSpatialRef(), source_layer.GetGeomType())
 
-    # loop over features
-    for feature_ix in range(len(repre_poly)):
-        print(f'Point ID: {repre_poly.loc[feature_ix, "point_id"]} | {feature_ix+1}/{repre_poly.shape[0]}', file=sys.stderr)
+    # Copy field definitions (schema) from source to target
+    source_layer_def = source_layer.GetLayerDefn()
+    for i in range(source_layer_def.GetFieldCount()):
+        field_def = source_layer_def.GetFieldDefn(i)
+        target_layer.CreateField(field_def)
+
+    feat_idx = 1
+    count = source_layer.GetFeatureCount()
+    for feature in source_layer:
+        print(f'Point ID: {feature.GetField("point_id")} | {feat_idx}/{count}', file=sys.stderr)
+        feat_idx += 1
+
         # get selected feature geom
-        repre_geom = repre_poly.loc[feature_ix, 'geometry']
+        repre_geom = loads(feature.GetGeometryRef().ExportToWkt())
         # create grid witin repre polygon
         grid = partition(repre_geom, grid_size)
         # cleaned grid for Sentinel-2
@@ -98,16 +110,16 @@ def main(tile, dst_path, grid_size=10):
 
             merged_grid_s2 = merged_grid_s2.geoms[sel_idx]
 
-        new_repre_poly = repre_poly.loc[feature_ix].copy()
-        new_repre_poly["geometry"] = merged_grid_s2
-        repre_poly_gridded.loc[len(repre_poly_gridded)] = new_repre_poly.dropna(axis=1, how="all")
+        new_feature = ogr.Feature(target_layer.GetLayerDefn())
+        new_feature.SetGeometry(ogr.CreateGeometryFromWkt(merged_grid_s2.wkt))
+        for i in range(source_layer_def.GetFieldCount()):
+            new_feature.SetField(i, feature.GetField(i))
 
-    print(f"Number of skipped features: {len(repre_poly)-len(repre_poly_gridded)}",
+        target_layer.CreateFeature(new_feature)
+        new_feature = None
+
+    print(f"Number of skipped features: {source_layer.GetFeatureCount()-target_layer.GetFeatureCount()}",
           file=sys.stderr)
-
-    # save result
-    repre_poly_gridded.set_crs(repre_poly.crs)
-    repre_poly_gridded.set_crs(repre_poly.crs).to_file(tile, layer="lucas_region_grow_gridded", driver="GPKG")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -139,5 +151,3 @@ if __name__ == "__main__":
         i += 1
         print(f"Processing tile {i} of {count}...\n{fn}", file=sys.stderr)
         main(fn, args.dst_path, args.grid_size)
-        if i == 3:
-            break
