@@ -32,7 +32,6 @@ for dir in `ls ${data_dir}/osm_clcplus/2018/*osm_clcplus* -d`; do
            --dst_dir /data/rg_repre_areas/${year}/${country}_rg_repre_areas \
            --version ${version} \
 	   --log_level debug
-    break
 done
 
 exit 0
