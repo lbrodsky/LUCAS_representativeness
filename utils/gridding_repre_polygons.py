@@ -86,7 +86,7 @@ def main(tile, dst_path, grid_size=10):
     feat_idx = 1
     count = source_layer.GetFeatureCount()
     for feature in source_layer:
-        print(f'Point ID: {feature.GetField("point_id")} | {feat_idx}/{count}', file=sys.stderr)
+        # print(f'Point ID: {feature.GetField("point_id")} | {feat_idx}/{count}', file=sys.stderr)
         feat_idx += 1
 
         # get selected feature geom
