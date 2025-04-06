@@ -75,11 +75,13 @@ wget ...
 (cd data/osm_clcplus/2018/; for f in *.7z; do 7z x $f; done)
 ```
 
-### Perform computation
+### Perform RG area computation
 
 ```
 ./utils/run_docker.sh ./data
 ```
+
+Output data is stored in `lucas_representativeness` directory.
 
 ### Postprocessing
 
@@ -87,9 +89,9 @@ wget ...
 docker run --rm --user `id -u` \
  -v `pwd`:/opt -v ./data:/data lucas_representativeness:latest \
  python3 /opt/utils/gridding_repre_polygons.py \
- --data_path ./data/rg_repre_areas/2018/
+ --data_path ./data/lucas_representativeness/2018/
 ```
 
 ```
-docker run --rm --user 1001 -v /home/landamar/git/st_lucas/LUCAS_representativeness:/opt -v ./data:/data lucas_representativeness:latest  python3 /opt/utils/merge_countries.py --src_path ./data/rg_repre_areas/2018/ --dst_path ./data/rg_repre_areas/2018/merged
+docker run --rm --user 1001 -v /home/landamar/git/st_lucas/LUCAS_representativeness:/opt -v ./data:/data lucas_representativeness:latest  python3 /opt/utils/merge_countries.py --src_path ./data/lucas_representativeness/2018/ --dst_path ./data/lucas_representativeness/2018/merged
 ```

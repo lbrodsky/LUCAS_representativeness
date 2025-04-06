@@ -100,7 +100,7 @@ def define_outputs(output_dir, tile_id, layers_kw, srs, field_defs):
     outputs = {}
     for layer in layers_kw:
         vector_path = os.path.join(output_dir,
-                                   tile_id + '.gpkg')
+                                   tile_id.replace('osm_clcplus', 'lucas_representativeness') + '.gpkg')
         out_rg_ds, out_rg_layer = create_layer(vector_path, f"lucas_{layer}", srs, field_defs)
         outputs[layer] = {'ds': out_rg_ds, 'ds_layer': out_rg_layer}
 

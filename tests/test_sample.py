@@ -13,7 +13,7 @@ from region_grow.process_tiles import define_parser, process_tiles
 def fixture():
     output_path = tempfile.mkdtemp()
     version = 1
-    gpkg_file = "netherlands_osm_clcplus_14580_sample.gpkg"
+    gpkg_file = "netherlands_lucas_representativeness_14580_sample.gpkg"
 
     return {
         'output_path': output_path,
