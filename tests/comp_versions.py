@@ -11,9 +11,10 @@ def main(dir_left, dir_right):
         count += 1
         
         # search for right tile
-        r_tile = Path(dir_right, l_tile.name)
+        r_tile = Path(dir_right, l_tile.name.replace('lucas_representativeness', 'osm_clcplus'))
+        print(r_tile)
         if not Path(r_tile).exists():
-            print("Right tile not found!")
+            print("ERROR: Right tile not found!")
             mismatch +=1
             continue
 
@@ -33,11 +34,11 @@ def comp_tiles(l_tile, r_tile, epsilon=1e-12):
         return success
 
     if (l_layer is None and r_layer is not None) or (l_layer is not None and r_layer is None):
-        print(f"Layer mismatch (left:{l_layer}, {r_ds.GetName()}:{r_layer}")
+        print(f"ERROR: Layer mismatch (left:{l_layer}, {r_ds.GetName()}:{r_layer}")
         success = False
         
     if l_layer.GetFeatureCount() != r_layer.GetFeatureCount():
-        print(f"Feature count mismatch ({l_layer.GetFeatureCount()}x{r_layer.GetFeatureCount()}: {r_ds.GetName()})!")
+        print(f"ERROR: Feature count mismatch ({l_layer.GetFeatureCount()}x{r_layer.GetFeatureCount()}: {r_ds.GetName()})!")
         success = False
     
     for l_feat in l_layer:
@@ -66,18 +67,18 @@ def comp_tiles(l_tile, r_tile, epsilon=1e-12):
                     mismatch = l_field_value != r_field_value
 
             if mismatch is True:
-                print(f"Field ({l_field_name}) mismatch: {l_field_value} vs {r_field_value} [{r_ds.GetName()}: {point_id}]!")
+                print(f"ERROR: Field ({l_field_name}) mismatch: {l_field_value} vs {r_field_value} [{r_ds.GetName()}: {point_id}]!")
                 success = False
 
             # check geometry
             l_geom = l_feat.GetGeometryRef()
             r_geom = r_feat.GetGeometryRef()
             if abs(l_geom.GetArea() - r_geom.GetArea()) > 1e-12:
-                print(f"Point id {point_id} area mismatch!")
+                print(f"ERROR: Point id {point_id} area mismatch!")
                 success = False
 
             if l_geom.Equal(r_geom) is False:
-                print(f"Point id {point_id} geom mismatch!")
+                print(f"ERROR: Point id {point_id} geom mismatch!")
                 success = False
 
         # if success is False:
