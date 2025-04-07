@@ -16,7 +16,7 @@ else
 fi
 
 year=2018
-for dir in `ls ${data_dir}/osm_clcplus/2018/*osm_clcplus* -d`; do
+for dir in `ls ${data_dir}/osm_clcplus/${year}/*osm_clcplus* -d`; do
     country=`basename $dir | cut -d'_' -f1`
     echo "Processing ${country} v${version}..."
 
