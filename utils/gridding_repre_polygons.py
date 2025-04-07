@@ -5,6 +5,7 @@
 import os
 import sys
 import argparse
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -72,21 +73,31 @@ def main(tile, grid_size=10):
         return # skip empty tiles
 
     # Check if the layer exists and delete it
-    target_layer_name = f"{layer_name}_gridded"
+    target_layer_name = f"{layer_name}_gridded_s2"
     if ds.GetLayerByName(target_layer_name):
         ds.DeleteLayer(target_layer_name)
     target_layer = ds.CreateLayer(target_layer_name, source_layer.GetSpatialRef(), source_layer.GetGeomType())
+
+    field_blacklist = [
+        "rectangularity",
+        "length",
+        "width",
+        "area",
+        "ratio",
+        "shape_gen"
+    ]
 
     # Copy field definitions (schema) from source to target
     source_layer_def = source_layer.GetLayerDefn()
     for i in range(source_layer_def.GetFieldCount()):
         field_def = source_layer_def.GetFieldDefn(i)
-        target_layer.CreateField(field_def)
+        if field_def.GetName() not in field_blacklist:
+            target_layer.CreateField(field_def)
 
     feat_idx = 1
     count = source_layer.GetFeatureCount()
     for feature in source_layer:
-        # print(f'Point ID: {feature.GetField("point_id")} | {feat_idx}/{count}', file=sys.stderr)
+        logging.debug(f'Point ID: {feature.GetField("point_id")} | {feat_idx}/{count}')
         feat_idx += 1
 
         # get selected feature geom
@@ -115,17 +126,31 @@ def main(tile, grid_size=10):
         new_feature = ogr.Feature(target_layer.GetLayerDefn())
         new_feature.SetGeometry(ogr.CreateGeometryFromWkt(merged_grid_s2.wkt))
         for i in range(source_layer_def.GetFieldCount()):
-            new_feature.SetField(i, feature.GetField(i))
+            if source_layer_def.GetFieldDefn(i).GetName() not in field_blacklist:
+                new_feature.SetField(i, feature.GetField(i))
 
         target_layer.CreateFeature(new_feature)
         new_feature = None
 
-    print(f"Number of skipped features: {source_layer.GetFeatureCount()-target_layer.GetFeatureCount()}",
-          file=sys.stderr)
+    logging.info(f"Number of skipped features: {source_layer.GetFeatureCount()-target_layer.GetFeatureCount()}")
+
+def init_logging(dst_dir, version):
+    """Initialize the processing log.
+    """
+    log_file = os.path.join(
+        dst_dir, f'log_gridding_repre_polygons_v{version}.txt'
+    )
+    log_level = logging.INFO
+
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
+                        level=log_level,
+                        handlers=[logging.FileHandler(log_file, mode='w'),
+                                  logging.StreamHandler()])
+    logging.info(f'Log file: {log_file}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser = argparse.ArgumentParser(description='LC nomenclature without class 13 (others)')
+    parser = argparse.ArgumentParser(description='Performs gridding of representative polygons to Sentinel-2.')
     parser.add_argument('--data_path', type=str, required=True,
                         help='Path to directory with source files')
     parser.add_argument('--version', type=int,
@@ -136,18 +161,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.version is None:
-        version = latest_version(Path(args.src_path).glob("*"))
+        version = latest_version(Path(args.data_path).glob("*"))
     else:
         version = args.version
-    
+    init_logging(args.data_path, version)
+
     try:
         gpkg_fn = list(Path(args.data_path).rglob(f'v{version}/*.gpkg'))
     except:
-        print('No original region grow files available.')
+        logging.error('No original region grow files available.')
 
     count = len(gpkg_fn)
     i = 0
     for fn in sorted(gpkg_fn):
         i += 1
-        print(f"Processing tile {i} of {count}...\n{fn}", file=sys.stderr)
-        main(fn,args.grid_size)
+        logging.info(f"Processing tile {i} of {count}...\n{fn}")
+        main(fn, args.grid_size)
