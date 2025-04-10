@@ -24,8 +24,7 @@ Run Docker container on sample data:
 
 ```
 docker run --rm  --user `id -u` \
- -v `pwd`:/opt \
- -v ./tests/data:/data \
+ -v `pwd`:/opt -v ./tests/data:/data \
  lucas_representativeness:latest \
  python3 /opt/region_grow/process_tiles.py \
  --tiles_dir /data/tiles \
@@ -39,8 +38,7 @@ Run tests on sample data:
 
 ```
 docker run --rm  --user `id -u` \
- -v `pwd`:/opt \
- -v ./tests/data:/data \
+ -v `pwd`:/opt -v ./tests/data:/data \
  lucas_representativeness:latest \
  python3 -m pytest /opt/tests/test_sample.py
 ```
@@ -81,17 +79,54 @@ wget ...
 ./utils/run_docker.sh ./data
 ```
 
-Output data is stored in `lucas_representativeness` directory.
+The calculation is applied on a country-by-country basis. For each
+OSM/CLCPlus tile an output GeoPackage is created (in
+`./data/lucas_representativeness` directory), which contains the
+following layers:
+
+- `lucas_points_buffer` (Polygon) - buffer zones around LUCAS points
+- `lucas_region_grow` (Polygon) - RG representative areas
+- `lucas_original_points` (Point) - original LUCAS points
+- `lucas_updated_points` (Point) - LUCAS points with a change in position
+- `lucas_nomatch_points` (Point) - LUCAS points with no match found
+
+The main output is stored in layer `lucas_region_grow`, which contains
+the calculated representative areas for the input LUCAS points.
 
 ### Postprocessing
 
-```
-docker run --rm --user `id -u` \
- -v `pwd`:/opt -v ./data:/data lucas_representativeness:latest \
- python3 /opt/utils/gridding_repre_polygons.py \
- --data_path ./data/lucas_representativeness/2018/
-```
+#### S2 grid
+
+In this step the representative areas are modified according to the S2
+grid based on specied spatial resolution.
 
 ```
-docker run --rm --user 1001 -v /home/landamar/git/st_lucas/LUCAS_representativeness:/opt -v ./data:/data lucas_representativeness:latest  python3 /opt/utils/merge_countries.py --src_path ./data/lucas_representativeness/2018/ --dst_path ./data/lucas_representativeness/2018/merged
+docker run --rm --user `id -u` \
+ -v `pwd`:/opt -v ./data:/data \
+ lucas_representativeness:latest \
+ python3 /opt/utils/gridding_repre_polygons.py \
+ --data_path ./data/lucas_representativeness/2018/
+ ```
+
+The `gridding_repre_polygons.py` modifies GeoPackages created in
+previous step by added a new layer:
+
+- `lucas_region_grow_gridded_s2`
+
+which contains new Sentinel-2-gridded representative
+areas. Representative areas that do not fit at least one S2 pixel are
+removed.
+
+#### Merge countries
+
+Eventually, the individual tiles by country are combined into a single
+layer that covers the entire EU territory.
+
+```
+docker run --rm --user `id -u` \
+ -v `pwd`:/opt -v ./data:/data \
+ lucas_representativeness:latest \
+ python3 /opt/utils/merge_countries.py \
+ --src_path ./data/lucas_representativeness/2018/ \
+ --dst_path ./data/lucas_representativeness/2018/merged
 ```
