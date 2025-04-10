@@ -177,3 +177,5 @@ if __name__ == "__main__":
         i += 1
         logging.info(f"Processing tile {i} of {count}...\n{fn}")
         main(fn, args.grid_size)
+
+    logging.info("Done")
