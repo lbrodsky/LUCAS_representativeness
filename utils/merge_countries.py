@@ -4,12 +4,15 @@ import os
 import sys
 import shutil
 import argparse
+import logging
+
 from glob import glob
 from pathlib import Path
 
 from osgeo import gdal, ogr
+gdal.DontUseExceptions()
 
-from utils import latest_version
+from utils import latest_version, country_codes
 
 def feature_count(fn):
     ds = ogr.Open(fn)
@@ -29,15 +32,15 @@ def create_ds(filename, vector_format="GPKG"):
 def merge_geometries(dst_fn, dst_ds_eu, data_dir, vector_format="GPKG"):
     """ogr2ogr merge over countries
     """
-    print(f'Generating: {dst_fn}')
+    logging.info(f'Generating: {dst_fn}')
 
     # create country-based datasource
     dst_ds = create_ds(dst_fn)
-    country_code = Path(dst_fn).name.split('_')[0]
+    country_name = Path(dst_fn).name.split('_')[0]
 
     # open input data sources
     for pfn in Path(data_dir).glob("*.gpkg"):
-        ds = ogr.Open(str(pfn))
+        ds = ogr.Open(pfn)
         if ds is None:
             # empty datasource -> no LUCAS points in tile
             continue
@@ -49,7 +52,7 @@ def merge_geometries(dst_fn, dst_ds_eu, data_dir, vector_format="GPKG"):
             layer_name = lyr.GetName()
             gdal.VectorTranslate(dst_ds.GetName(), ds.GetName(), format=vector_format,
                                  layers=[layer_name], accessMode='append',
-                                 layerName=f'{country_code}_{layer_name}')
+                                 layerName=f'{country_codes[country_name].lower()}_{layer_name}')
             gdal.VectorTranslate(dst_ds_eu.GetName(), ds.GetName(), format=vector_format,
                                  layers=[layer_name], accessMode='append',
                                  layerName=f'eu_{layer_name}')
@@ -61,28 +64,55 @@ def main(dirs, dst_dir, version=None):
     """Merge representative areas and other products for all EU countries
     """
     basename = "lucas_representativeness"
-    print('Starting merge procedure...')
+    logging.info('Starting merge procedure...')
 
-    if not os.path.exists(dst_dir):
-        os.makedirs(dst_dir)
-    dst_fn_eu = os.path.join(dst_dir, f"eu_{basename}.gpkg")
+    dst_fn_eu = os.path.join(dst_dir, f"european_union_{basename}.gpkg")
     dst_ds_eu = create_ds(dst_fn_eu)
-    print(f'Generating: {dst_fn_eu}')
+    logging.info(f'Generating: {dst_fn_eu}')
 
     for cntr in dirs:
+        if cntr.name == Path(dst_dir).name:
+            # skip output dir
+            continue
+        if not cntr.is_dir():
+            continue
+
+        if version is None:
+            version = latest_version(Path(cntr).parent.glob('*'))
+
         if version > 0:
             src_dir = cntr / f"v{version}"
             if not src_dir.exists():
-                print(f"WARNING: {src_dir} doesn't exists. Skipped.", file=sys.stderr)
+                logging.warning(f"WARNING: {src_dir} doesn't exists. Skipped.", file=sys.stderr)
                 continue
             code = src_dir.parent.name.split('_')[0]
             dst_fn = os.path.join(dst_dir, f"{code}_{basename}.gpkg")
-            print(f"Processing {src_dir}...")
+            logging.info(f"Processing {src_dir}...")
             merge_geometries(dst_fn, dst_ds_eu, src_dir)
 
     dst_ds_eu = None
 
-    print('Done')
+    logging.info('Done')
+
+def init_logging(dst_dir, basename, version=None):
+    """Initialize the processing log.
+    """
+    if version is not None:
+        log_file = os.path.join(
+            dst_dir, f'log_{basename}_v{version}.txt'
+        )
+    else:
+        log_file = os.path.join(
+            dst_dir, f'log_{basename}.txt'
+        )
+
+    log_level = logging.INFO
+
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
+                        level=log_level,
+                        handlers=[logging.FileHandler(log_file, mode='w'),
+                                  logging.StreamHandler()])
+    logging.info(f'Log file: {log_file}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -94,12 +124,11 @@ if __name__ == "__main__":
                         help='Path to target directory')
     args = parser.parse_args()
 
-    if args.version is None:
-        version = latest_version(Path(args.src_path).glob("*"))
-    else:
-        version = args.version
-
     if Path(args.dst_path).exists():
         shutil.rmtree(args.dst_path)
+    if not os.path.exists(args.dst_path):
+        os.makedirs(args.dst_path)
 
-    main(Path(args.src_path).glob("*"), args.dst_path, version)
+    init_logging(args.dst_path, Path(__file__).stem)
+
+    main(Path(args.src_path).glob("*"), args.dst_path, args.version)
