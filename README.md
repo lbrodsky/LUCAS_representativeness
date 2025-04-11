@@ -82,7 +82,7 @@ wget ...
 ```
 
 The calculation is applied on a country-by-country basis. For each
-OSM/CLCPlus tile an output GeoPackage is created (in
+OSM/CLCplus tile an output GeoPackage is created (in
 `./data/lucas_representativeness` directory), which contains the
 following layers:
 
