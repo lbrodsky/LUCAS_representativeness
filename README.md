@@ -43,7 +43,7 @@ docker run --rm  --user `id -u` \
  python3 -m pytest /opt/tests/test_sample.py
 ```
 
-## Run complete EU coverage computation
+## Run computation on full EU coverage
 
 ### Data preparation
 
@@ -147,3 +147,5 @@ docker run --rm --user `id -u` \
  python3 /opt/utils/country_repre_stats.py \
  --data_dir ./data/lucas_representativeness/2018/merged
 ```
+
+Computed statistics is stored in a CSV file.
