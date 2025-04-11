@@ -5,7 +5,7 @@ shape-constrained region-growing algorithm was specifically designed
 to enhance the accuracy and consistency of machine learning approaches
 for land cover and land use mapping by ensuring that the delineated
 areas accurately represent the surrounding landscape. The algorithm
-takes as input the OSM/CLC+ land cover product (ZENODO TBD), which
+takes as input the OSM/CLCplus land cover product ([Zenodo](https://zenodo.org/records/15039461)), which
 provides a harmonized and detailed land cover dataset suitable for
 large-scale analysis.
 
