@@ -1,0 +1,17 @@
+name: Docker pytest CI
+
+on:
+  push:
+    branches: [ "main", "initial" ]
+  pull_request:
+    branches: [ "main", "initial" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build --tag lucas_representativeness:latest docker/
+    - name: Run tests
+      run: docker run --rm -v `pwd`:/opt -v ./tests/data:/data lucas_representativeness:latest python3 -m pytest /opt/tests/test_sample.py
