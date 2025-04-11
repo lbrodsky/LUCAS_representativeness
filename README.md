@@ -97,10 +97,10 @@ the calculated representative areas for the input LUCAS points.
 
 ### Postprocessing
 
-#### S2 grid
+#### Sentinel-2 grid
 
-In this step the representative areas are modified according to the S2
-grid based on specied spatial resolution.
+In this step the representative areas are modified according to the Sentinel-2
+grid based on specified spatial resolution.
 
 ```
 docker run --rm --user `id -u` \
