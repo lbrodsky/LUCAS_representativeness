@@ -80,7 +80,7 @@ def main(data_dir, version, products):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path', help='Directory with region grow representative polygons for countries.')
+    parser.add_argument('--data_dir', help='Directory with region grow representative polygons for countries.')
     parser.add_argument('--workers', type=int, default=8,
                         help='Number of workers for parallel CPU processing.')
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     # determine version from log file
     version = -1
-    for fn in Path(args.data_path).glob('log_merge_countries_v*.txt'):
+    for fn in Path(args.data_dir).glob('log_merge_countries_v*.txt'):
         version = fn.stem.split('_')[-1].lstrip('v')
 
-    main(args.data_path, version, ['*_lucas_representativess.gpkg'])
+    main(args.data_dir, version, ['*_lucas_representativess.gpkg'])

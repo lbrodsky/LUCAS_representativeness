@@ -116,19 +116,19 @@ def init_logging(dst_dir, basename, version=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--src_path', type=str, required=True,
+    parser.add_argument('--src_dir', type=str, required=True,
                         help='Path to directory with source files')
     parser.add_argument('--version', type=int,
                         help='Version to process (default: latest)')
-    parser.add_argument('--dst_path', type=str, required=True,
+    parser.add_argument('--dst_dir', type=str, required=True,
                         help='Path to target directory')
     args = parser.parse_args()
 
-    if Path(args.dst_path).exists():
-        shutil.rmtree(args.dst_path)
-    if not os.path.exists(args.dst_path):
-        os.makedirs(args.dst_path)
+    if Path(args.dst_dir).exists():
+        shutil.rmtree(args.dst_dir)
+    if not os.path.exists(args.dst_dir):
+        os.makedirs(args.dst_dir)
 
-    init_logging(args.dst_path, Path(__file__).stem, latest_version(Path(args.src_path).glob('*')))
+    init_logging(args.dst_dir, Path(__file__).stem, latest_version(Path(args.src_dir).glob('*')))
 
-    main(Path(args.src_path).glob("*"), args.dst_path, args.version)
+    main(Path(args.src_dir).glob("*"), args.dst_dir, args.version)

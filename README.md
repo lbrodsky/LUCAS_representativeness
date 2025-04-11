@@ -67,12 +67,14 @@ docker rm lucas-postgis
 
 Exported LUCAS points are stored in `data/lucas_points`.
 
-Download OSM/CLC+ product (TBD):
+Download OSM/CLCplus product:
 
 ```
-mkdir -p data/osm_clcplus/2018/
-wget ...
-(cd data/osm_clcplus/2018/; for f in *.7z; do 7z x $f; done)
+docker run --rm --user `id -u` \
+ -v `pwd`:/opt -v ./data:/data \
+ lucas_representativeness:latest \
+ python3 /opt/utils/download_osm_clcplus.py \
+ --dst_dir /data/osm_clcplus/2018/
 ```
 
 ### Perform RG area computation
@@ -107,7 +109,7 @@ docker run --rm --user `id -u` \
  -v `pwd`:/opt -v ./data:/data \
  lucas_representativeness:latest \
  python3 /opt/utils/gridding_repre_polygons.py \
- --data_path ./data/lucas_representativeness/2018/
+ --data_dir ./data/lucas_representativeness/2018/
  ```
 
 The `gridding_repre_polygons.py` modifies GeoPackages created in
@@ -130,8 +132,8 @@ docker run --rm --user `id -u` \
  -v `pwd`:/opt -v ./data:/data \
  lucas_representativeness:latest \
  python3 /opt/utils/merge_countries.py \
- --src_path ./data/lucas_representativeness/2018/ \
- --dst_path ./data/lucas_representativeness/2018/merged
+ --src_dir ./data/lucas_representativeness/2018/ \
+ --dst_dir ./data/lucas_representativeness/2018/merged
 ```
 
 ### Additional utilities
@@ -143,5 +145,5 @@ docker run --rm --user `id -u` \
  -v `pwd`:/opt -v ./data:/data \
  lucas_representativeness:latest \
  python3 /opt/utils/country_repre_stats.py \
- --data_path ./data/lucas_representativeness/2018/merged
+ --data_dir ./data/lucas_representativeness/2018/merged
 ```

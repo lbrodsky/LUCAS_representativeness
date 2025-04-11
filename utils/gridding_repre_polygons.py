@@ -151,7 +151,7 @@ def init_logging(dst_dir, version):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(description='Performs gridding of representative polygons to Sentinel-2.')
-    parser.add_argument('--data_path', type=str, required=True,
+    parser.add_argument('--data_dir', type=str, required=True,
                         help='Path to directory with source files')
     parser.add_argument('--version', type=int,
                         help='Version to process (default: latest)')
@@ -161,13 +161,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.version is None:
-        version = latest_version(Path(args.data_path).glob("*"))
+        version = latest_version(Path(args.data_dir).glob("*"))
     else:
         version = args.version
-    init_logging(args.data_path, version)
+    init_logging(args.data_dir, version)
 
     try:
-        gpkg_fn = list(Path(args.data_path).rglob(f'v{version}/*.gpkg'))
+        gpkg_fn = list(Path(args.data_dir).rglob(f'v{version}/*.gpkg'))
     except:
         logging.error('No original region grow files available.')
 
