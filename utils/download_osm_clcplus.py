@@ -26,7 +26,7 @@ def main(dst_dir):
         data_file = download_file(f"https://zenodo.org/records/15039461/files/{cntr}_osm_clcplus_2018.7z",
                                   dst_dir)
         extract_data(data_file, dst_dir)
-        break
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dst_dir', help='Destination directory.')
