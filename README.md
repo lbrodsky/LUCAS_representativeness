@@ -65,6 +65,8 @@ docker stop lucas-postgis
 docker rm lucas-postgis
 ```
 
+Exported LUCAS points are stored in `data/lucas_points`.
+
 Download OSM/CLC+ product (TBD):
 
 ```
