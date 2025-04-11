@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
 
 # Compute representativeness stats per country
-# Example usage:
-"""
-python3 ./utils/country_repre_stats.py \
-    -s ./repre_v1 \
-    -d ./repre_v1/stats
-"""
 
 import os
+import argparse
+from pathlib import Path
+
 import pandas as pd
 import geopandas as gpd
-import argparse
 from joblib import Parallel, delayed
 
+from utils import latest_version, country_codes
 
-def main(dir, dst_path, version, products):
+def main(data_dir, version, products):
     """Merge representative areas and other products for all EU countries
     """
     print('Starting stat analysis')
@@ -24,26 +21,17 @@ def main(dir, dst_path, version, products):
                                'Multiclass', 'Multiclass_pct',
                                'Geom_update', 'Geom_update_pct', 'Sim_1', 'Sim_1_pct'])
 
-    countries = ['at', 'be', 'bg', 'cy', 'cz', 'de', 'dk', 'ee', 'es', 'fi', 'fr', 'gb', 'gr', 'hr', 'hu', 'ie',
-                 'it', 'lt', 'lu', 'lv', 'nl', 'mt', 'pl', 'pt', 'ro', 'se', 'si', 'sk']
-
-    v_max = version
-
-    gpkg_products = ['lucas_region_grow',
-                     'lucas_updated_points', 'lucas_points_buffer',
-                     'lucas_original_points', 'lucas_nomatch_points']
-
-    for cntr in countries:
-        print(cntr)
+    for cntr in sorted(country_codes.keys()):
+        cntr_code = country_codes[cntr]
         # original points
-        cntr_fn = os.path.join(dir, f'{cntr}_lucas_representativeness.gpkg')
-        df_original_points = gpd.read_file(cntr_fn, layer='lucas_original_points')
+        cntr_fn = os.path.join(data_dir, f'{cntr}_lucas_representativeness.gpkg')
+        df_original_points = gpd.read_file(cntr_fn, layer=f'{cntr_code}_lucas_original_points')
 
         # region grow polygons
-        df_region_grow = gpd.read_file(cntr_fn, layer='lucas_region_grow')
+        df_region_grow = gpd.read_file(cntr_fn, layer=f'{cntr_code}_lucas_region_grow')
 
         # no match points
-        df_nomatch_points = gpd.read_file(cntr_fn, layer='lucas_nomatch_points')
+        df_nomatch_points = gpd.read_file(cntr_fn, layer=f'{cntr_code}_lucas_nomatch_points')
 
         # analysis
         # rg / no match points
@@ -66,15 +54,16 @@ def main(dir, dst_path, version, products):
         sim_1 = (df_region_grow['similarity'] == 1).sum()
         print(f'Detected similarity ~ 1 = {sim_1} out of {number_points}.')
 
+        cntr_name = cntr.replace('-', ' ').capitalize()
         if number_points > 0:
-            row = {'Country': cntr, 'Version': v_max, 'No_points': number_points,
+            row = {'Country': cntr_name, 'Version': version, 'No_points': number_points,
                    'RG': number_procesed, 'RG_pct': round(number_procesed / number_points * 100, 1),
                    'No_match': no_processed, 'No_match_pct': round(no_processed / number_points * 100, 1),
                    'Multiclass': number_multiclass, 'Multiclass_pct': round(number_multiclass / number_points * 100, 1),
                    'Geom_update': number_updated_points, 'Geom_update_pct': round(number_updated_points / number_points * 100, 1),
                    'Sim_1': sim_1, 'Sim_1_pct': round(sim_1 / number_points * 100, 1)}
         else:
-            row = {'Country': cntr, 'Version': v_max, 'No_points': number_points,
+            row = {'Country': cntr_name, 'Version': version, 'No_points': number_points,
                    'RG': number_procesed, 'RG_pct': 0,
                    'No_match': no_processed, 'No_match_pct': 0,
                    'Multiclass': number_multiclass, 'Multiclass_pct': 0,
@@ -83,21 +72,23 @@ def main(dir, dst_path, version, products):
 
         df = pd.concat([df, pd.DataFrame.from_dict([row])], ignore_index=True)
 
-    eu_lucas_repre_stat_fn = os.path.join(dst_path, 'eu_lucas_representativeness_stat.csv')
+    eu_lucas_repre_stat_fn = os.path.join(data_dir, 'european-union_lucas_representativeness_stat.csv')
+    print(f"Stats saved in {eu_lucas_repre_stat_fn}")
     df.to_csv(eu_lucas_repre_stat_fn, sep=';')
-    print('End.')
+    print('Done.')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--src_dir', type=str, help='Directory with region grow representatrive polygons for countries.')
-    parser.add_argument('-d', '--dst_dir', type=str, help='Destination directory for results.')
-    parser.add_argument('-v', '--version', type=str, help='Processed version.')
-    parser.add_argument('-w', '--workers', metavar='workers', type=int, default=12,
+    parser.add_argument('--data_path', help='Directory with region grow representative polygons for countries.')
+    parser.add_argument('--workers', type=int, default=8,
                         help='Number of workers for parallel CPU processing.')
 
     args = parser.parse_args()
 
-    products = ['*_lucas_region_grow.gpkg']
+    # determine version from log file
+    version = -1
+    for fn in Path(args.data_path).glob('log_merge_countries_v*.txt'):
+        version = fn.stem.split('_')[-1].lstrip('v')
 
-    main(args.src_dir, args.dst_dir, args.version, products)
+    main(args.data_path, version, ['*_lucas_representativess.gpkg'])

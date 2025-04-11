@@ -2,6 +2,7 @@ import os
 import logging
 
 def latest_version(dirs):
+    v_max = -1
     for cntr in dirs:
         if not cntr.is_dir():
             continue

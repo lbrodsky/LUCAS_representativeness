@@ -129,6 +129,6 @@ if __name__ == "__main__":
     if not os.path.exists(args.dst_path):
         os.makedirs(args.dst_path)
 
-    init_logging(args.dst_path, Path(__file__).stem)
+    init_logging(args.dst_path, Path(__file__).stem, latest_version(Path(args.src_path).glob('*')))
 
     main(Path(args.src_path).glob("*"), args.dst_path, args.version)

@@ -119,8 +119,9 @@ removed.
 
 #### Merge countries
 
-Eventually, the individual tiles by country are combined into a single
-layer that covers the entire EU territory.
+Eventually, the individual tiles are combined into a single layer per
+each country. Also a single layer covering the entire EU territory is
+created.
 
 ```
 docker run --rm --user `id -u` \
@@ -129,4 +130,16 @@ docker run --rm --user `id -u` \
  python3 /opt/utils/merge_countries.py \
  --src_path ./data/lucas_representativeness/2018/ \
  --dst_path ./data/lucas_representativeness/2018/merged
+```
+
+### Additional utilities
+
+Statistics per country may be computed by `country_repre_stats.py` utility:
+
+```
+docker run --rm --user `id -u` \
+ -v `pwd`:/opt -v ./data:/data \
+ lucas_representativeness:latest \
+ python3 /opt/utils/country_repre_stats.py \
+ --data_path ./data/lucas_representativeness/2018/merged
 ```
