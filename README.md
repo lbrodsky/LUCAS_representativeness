@@ -10,7 +10,7 @@ provides a harmonized and detailed land cover dataset suitable for
 large-scale analysis.
 
 The tool is demonstrated on LUCAS points in 2018 retrieved from
-[ST_LUCAS](https://geoforall.fsv.cvut.cz/st_lucas/) system.
+[ST_LUCAS](https://geoforall.fsv.cvut.cz/st_lucas/) geospatial system.
 
 ## Build Docker image
 
