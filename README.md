@@ -1,5 +1,7 @@
 # LUCAS representativeness
 
+![Tests](https://github.com/lbrodsky/LUCAS_representativeness/actions/workflows/docker-pytest.yml/badge.svg)
+
 Code to compute spatially representative areas. Original
 shape-constrained region-growing algorithm was specifically designed
 to enhance the accuracy and consistency of machine learning approaches
