@@ -16,7 +16,7 @@ else
 fi
 
 year=2018
-for dir in `ls ${data_dir}/osm_clcplus/${year}/*osm_clcplus* -d`; do
+for dir in `ls ${data_dir}/osm_clcplus/${year}/*osm_clcplus*/ -d`; do
     country=`basename $dir | cut -d'_' -f1`
     echo "Processing ${country} v${version}..."
 
@@ -31,7 +31,7 @@ for dir in `ls ${data_dir}/osm_clcplus/${year}/*osm_clcplus* -d`; do
            --lucas_thr_points /data/lucas_points/eu_lucas_points_thr_${year}.gpkg \
            --dst_dir /data/lucas_representativeness/${year}/${country}_lucas_representativeness \
            --version ${version} \
-	   --log_level debug
+           --log_level debug
 done
 
 exit 0
