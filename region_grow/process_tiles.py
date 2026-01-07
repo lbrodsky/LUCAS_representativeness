@@ -9,6 +9,7 @@ import argparse
 import glob
 import math
 import logging
+import psutil
 import numpy as np
 from osgeo import ogr
 from osgeo import osr
@@ -28,7 +29,16 @@ from region_grow.exceptions import ConfigError, IllegalArgumentError
 RAD2DEGREE = 180 / math.pi
 DEGREE2RAD = math.pi / 180
 
+process = psutil.Process(os.getpid())
+max_ram = 0
+
 __version__ = "1.0"
+
+def check_ram():
+    global max_ram
+    ram = process.memory_info().rss  # bytes
+    if ram > max_ram:
+        max_ram = ram
 
 def init_logging(dst_dir, args):
     """Initialize the processing log.
@@ -676,6 +686,7 @@ def process_single_tile(config):
 
         logging.debug(f'Fields: {output_fields}')
 
+        check_ram()
         feature = lucas_layer.GetNextFeature()
 
     # close and save outputs
@@ -733,6 +744,7 @@ def process_tiles(args):
 
     # closing the input vector data
     end = time.time()
+    logging.info(f"Peak memory usage during computation: {max_ram / 1024**2:.2f} MB")
     logging.info(f"Process duration: {round((end - start) / 60., 2)} minutes.")
 
 
