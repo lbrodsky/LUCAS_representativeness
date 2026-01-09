@@ -74,7 +74,7 @@ def main(dirs, dst_dir, version=None):
         if cntr.name == Path(dst_dir).name:
             # skip output dir
             continue
-        if not cntr.is_dir():
+        if not cntr.is_dir() or cntr.name == 'merged':
             continue
 
         if version is None:
@@ -83,7 +83,7 @@ def main(dirs, dst_dir, version=None):
         if version > 0:
             src_dir = cntr / f"v{version}"
             if not src_dir.exists():
-                logging.warning(f"WARNING: {src_dir} doesn't exists. Skipped.", file=sys.stderr)
+                logging.warning(f"WARNING: {src_dir} doesn't exists. Skipped.")
                 continue
             code = src_dir.parent.name.split('_')[0]
             dst_fn = os.path.join(dst_dir, f"{code}_{basename}.gpkg")
@@ -129,6 +129,7 @@ if __name__ == "__main__":
     if not os.path.exists(args.dst_dir):
         os.makedirs(args.dst_dir)
 
-    init_logging(args.dst_dir, Path(__file__).stem, latest_version(Path(args.src_dir).glob('*')))
+    init_logging(args.dst_dir, Path(__file__).stem,
+                 latest_version(Path(args.src_dir).glob('*')) if args.version is None else args.version)
 
     main(Path(args.src_dir).glob("*"), args.dst_dir, args.version)
