@@ -70,7 +70,7 @@ def main(dirs, dst_dir, version=None):
     dst_ds_eu = create_ds(dst_fn_eu)
     logging.info(f'Generating: {dst_fn_eu}')
 
-    for cntr in dirs:
+    for cntr in sorted(dirs):
         if cntr.name == Path(dst_dir).name:
             # skip output dir
             continue
