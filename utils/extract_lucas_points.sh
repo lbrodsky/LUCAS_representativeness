@@ -11,7 +11,7 @@ DB=lucas
 
 mkdir -p ${DATA_DIR}
 createdb -U postgres $DB
-7z e -so ${DATA_DIR}/db_st_lucas_dump.sql.7z | sed '/^GRANT /d; /^ALTER DEFAULT PRIVILEGES /d' | psql -U postgres -d $DB
+7z e -so ${DATA_DIR}/../db_st_lucas_dump.sql.7z | sed '/^GRANT /d; /^ALTER DEFAULT PRIVILEGES /d' | psql -U postgres -d $DB
 
 filebase=lucas_points
 rm -f ${DATA_DIR}/${filename}_*.gpkg
