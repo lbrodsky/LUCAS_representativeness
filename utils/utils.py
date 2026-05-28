@@ -14,7 +14,7 @@ def latest_version(dirs):
 
     return v_max
 
-country_codes = {
+_country_codes = {
     "austria": "AT",
     "belgium": "BE",
     "bulgaria": "BG",
@@ -26,7 +26,6 @@ country_codes = {
     "finland": "FI",
     "france": "FR",
     "germany": "DE",
-    "great-britain": "UK",
     "greece": "EL",
     "hungary": "HU",
     "ireland": "IE",
@@ -44,3 +43,14 @@ country_codes = {
     "spain": "ES",
     "sweden": "SE"
 }
+
+def country_codes(year):
+    if year == 2018:
+        codes = _country_codes | {"great-britain": "UK"}
+    elif year == 2022:
+        codes =_country_codes
+    else:
+        raise RuntimeError(f"Year {year} not supported")
+    
+    return dict(sorted(codes.items()))
+    
