@@ -14,6 +14,7 @@ import shapely
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from shapely.wkt import loads
+from joblib import Parallel, delayed
 
 from utils import latest_version
 
@@ -66,6 +67,7 @@ def remove_small(grid, grid_size):
 def main(tile, grid_size=10):
     """Gridding repre polygons main process.
     """
+    logging.debug(f"Processing tile {tile}...")
     layer_name = "lucas_region_grow"
     ds = ogr.Open(tile, update=True)
     source_layer = ds.GetLayerByName(layer_name)
@@ -132,7 +134,7 @@ def main(tile, grid_size=10):
         target_layer.CreateFeature(new_feature)
         new_feature = None
 
-    logging.info(f"Number of skipped features: {source_layer.GetFeatureCount()-target_layer.GetFeatureCount()}")
+    logging.info(f"Number of skipped features (tile: {tile}): {source_layer.GetFeatureCount()-target_layer.GetFeatureCount()}")
 
 def init_logging(dst_dir, version):
     """Initialize the processing log.
@@ -157,6 +159,9 @@ if __name__ == "__main__":
                         help='Version to process (default: latest)')
     parser.add_argument('--grid_size', default=10, type=int,
                         help='Grid/pixel size of target sensor')
+    parser.add_argument('--workers',
+                        type=int, default=8,
+                        help='Number of workers for parallel CPU processing (default: %(default)s).')
 
     args = parser.parse_args()
 
@@ -172,10 +177,18 @@ if __name__ == "__main__":
         logging.error('No original region grow files available.')
 
     count = len(gpkg_fn)
-    i = 0
-    for fn in sorted(gpkg_fn):
-        i += 1
-        logging.info(f"Processing tile {i} of {count}...\n{fn}")
-        main(fn, args.grid_size)
+    if args.workers > 1:
+        # joblib parallelization
+        logging.info(f'Number of tiles to process: {count}')
+        Parallel(n_jobs=args.workers, backend="multiprocessing", verbose=10)(
+        # Parallel(n_jobs=args.workers, backend="threading", verbose=10)(
+            delayed(main)(fn, args.grid_size) for fn in sorted(gpkg_fn))
+    else:
+        # process using one core
+        i = 0
+        for fn in sorted(gpkg_fn):
+            i += 1
+            logging.info(f"Processing tile {i} of {count}...\n{fn}")
+            main(fn, args.grid_size)
 
     logging.info("Done")
