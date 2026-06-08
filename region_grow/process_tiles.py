@@ -412,7 +412,12 @@ def get_repre_data(t, geometry, geometry2, gps_prec_val, outputs, output_fields,
         return None
 
     # translate OSM to LUCAS lc coding
-    lucas_osm_code = lc_mappings['lucas_lc1_2_osm'][lc1]
+    try:
+        lucas_osm_code = lc_mappings['lucas_lc1_2_osm'][lc1]
+    except KeyError:
+        logger.error(f'OSM code ({lc1}) cannot be translated to LUCAS LC coding')
+        save_point(geometry, outputs['original_points']['ds_layer'], output_fields)
+        return None
 
     # setting: coding for LUCAS lc and OSM land cover comparison - similarity
     # 0 .. no similarity -> different classes
@@ -584,10 +589,15 @@ def process_single_tile(config):
         obs_direct = feature.GetField('obs_direct')
 
         # output vector attributes
+        try:
+            lc1_name = lc_mappings['lucas_lc1_codes_2_names'][lc1]
+        except KeyError:
+            logging.error(f'LC code ({lc1}) cannot be translated to LC name')
+            lc1_name = None
         output_fields = {
             'point_id': int(point_id),
             'lc1_h': lc1,
-            'lc1_name': lc_mappings['lucas_lc1_codes_2_names'][lc1],
+            'lc1_name': lc1_name,
             'gps_prec': gps_prec_val,
             'tile_id': os.path.basename(t)
         }
@@ -656,7 +666,11 @@ def process_single_tile(config):
         output_fields["multiclass"] = len(repre_data['osm_codes'])
         output_fields["obs_type"] = obs_type
         output_fields["obs_dist"] = obs_dist
-        output_fields["lc"] = lc_mappings['lucas_lc1_2_lc'][lc1[0:-1]]
+        try:
+            output_fields["lc"] = lc_mappings['lucas_lc1_2_lc'][lc1[0:-1]]
+        except KeyError:
+            logging.error(f'LC attribute cannot be translated from {lc1[0:-1]}')
+            output_fields["lc"] =  None
         output_fields["similarity"] = repre_data['max_similarity']
         output_fields["rectangularity"] = round(repre_data['rectangularity'], 3)
 

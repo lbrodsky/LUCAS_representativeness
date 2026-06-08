@@ -37,6 +37,8 @@ def merge_geometries(dst_fn, dst_ds_eu, data_dir, vector_format="GPKG"):
     # create country-based datasource
     dst_ds = create_ds(dst_fn)
     country_name = Path(dst_fn).name.split('_')[0]
+    year = int(data_dir.parent.parent.name)
+    country_codes_year = country_codes(year)
 
     # open input data sources
     for pfn in Path(data_dir).glob("*.gpkg"):
@@ -52,7 +54,7 @@ def merge_geometries(dst_fn, dst_ds_eu, data_dir, vector_format="GPKG"):
             layer_name = lyr.GetName()
             gdal.VectorTranslate(dst_ds.GetName(), ds.GetName(), format=vector_format,
                                  layers=[layer_name], accessMode='append',
-                                 layerName=f'{country_codes[country_name].lower()}_{layer_name}')
+                                 layerName=f'{country_codes_year[country_name].lower()}_{layer_name}')
             gdal.VectorTranslate(dst_ds_eu.GetName(), ds.GetName(), format=vector_format,
                                  layers=[layer_name], accessMode='append',
                                  layerName=f'eu_{layer_name}')

@@ -102,8 +102,11 @@ docker run --rm --user `id -u` \
 ### Perform RG area computation
 
 ```
-./utils/run_docker.sh ./data
+./utils/run_docker.sh ./data 1
 ```
+
+- The first argument (`./data`) specifies the path to the data directory.
+- The second argument (`1`) specifies the product version number.
 
 The calculation is applied on a country-by-country basis. For each
 OSM/CLCplus tile an output GeoPackage is created (in

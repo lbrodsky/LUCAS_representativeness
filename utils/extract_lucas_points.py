@@ -41,10 +41,10 @@ def main(dst_dir, year):
         point_id,
         geom,
         survey_lc1_h lc1_h,
-        survey_gps_prec gps_prec,
-        survey_obs_dist obs_dist,
-        survey_obs_type obs_type,
-        survey_obs_direct obs_direct
+        survey_gps_prec::float gps_prec,
+        survey_obs_dist::float obs_dist,
+        survey_obs_type::int obs_type,
+        survey_obs_direct::int obs_direct
         from data.lucas_points
         where survey_year = {year}
         AND point_nuts0 = '{country}'
@@ -58,14 +58,14 @@ def main(dst_dir, year):
     point_id,
     geom_thr as geom,
     survey_lc1_h lc1_h,
-    survey_gps_prec gps_prec,
-    survey_obs_dist obs_dist,
-    survey_obs_type obs_type,
-    survey_obs_direct obs_direct
+    survey_gps_prec::float gps_prec,
+    survey_obs_dist::float obs_dist,
+    survey_obs_type::int obs_type,
+    survey_obs_direct::int obs_direct
     from data.lucas_points
     where survey_year = {year}
     """
-    create_gpkg(output_file, 'eu_lucas_points_thr', sql, dbname, dbuser)
+    create_gpkg(thr_output, 'eu_lucas_points_thr', thr_sql, dbname, dbuser)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

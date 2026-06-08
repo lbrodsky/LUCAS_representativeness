@@ -49,6 +49,7 @@ B84;Permanent industrial crops
 Bx1;Arable land (only pi)
 Bx2;Permanent crops (only pi)
 C10;Broadleaved woodland
+C20;Coniferous woodland
 C21;Spruce dominated coniferous woodland
 C22;Pine dominated coniferous woodland
 C23;Other coniferous woodland
