@@ -5,17 +5,19 @@
 script_dir="$(dirname "$(realpath "$0")")"
 
 if test -z $1; then
-    data_dir=/data/lucas/representativeness
-else
-    data_dir=$1
+    echo "Usage: $0 data_dir year version"
+    exit 1
 fi
 if test -z $2; then
-    version=1
-else
-    version=$2
+    echo "Usage: $0 data_dir year version"
+fi
+if test -z $3; then
+    echo "Usage: $0 data_dir year version"
 fi
 
-year=2018
+data_dir="$1"
+year="$2"
+version="$3"
 for dir in `ls ${data_dir}/osm_clcplus/${year}/*osm_clcplus*/ -d`; do
     country=`basename $dir | cut -d'_' -f1`
     echo "Processing ${country} v${version}..."
@@ -31,7 +33,8 @@ for dir in `ls ${data_dir}/osm_clcplus/${year}/*osm_clcplus*/ -d`; do
            --lucas_thr_points /data/lucas_points/eu_lucas_points_thr_${year}.gpkg \
            --dst_dir /data/lucas_representativeness/${year}/${country}_lucas_representativeness \
            --version ${version} \
-           --log_level debug
+           --log_level debug \
+	   --workers 20
 done
 
 exit 0

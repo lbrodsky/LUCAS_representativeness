@@ -1,4 +1,4 @@
-# LUCAS representativeness
+ LUCAS representativeness
 
 ![Tests](https://github.com/lbrodsky/LUCAS_representativeness/actions/workflows/docker-pytest.yml/badge.svg)
 
@@ -47,6 +47,10 @@ docker run --rm  --user `id -u` \
 
 ## Run computation on full EU coverage
 
+This section demonstrates computation for the year 2018. Currently,
+the software supports computations for two reference years: 2018 and
+2022.
+
 ### Data preparation
 
 Create data dir:
@@ -55,35 +59,54 @@ Create data dir:
 mkdir data
 ```
 
-Extract LUCAS points for 2018:
+#### Extract LUCAS points
+
+Deploy PostGIS DB:
 
 ```
-wget https://geoforall.fsv.cvut.cz/extracts/st_lucas/db_st_lucas_dump.sql.7z -P data
+wget https://geoforall.fsv.cvut.cz/st_lucas/extracts/db_st_lucas_dump.sql.7z -P data
 docker pull postgis/postgis:16-3.4
 docker run --name lucas-postgis -v ./data:/data -v `pwd`/utils:/opt/utils -e POSTGRES_PASSWORD=lucas -d postgis/postgis:16-3.4
-docker exec -ti lucas-postgis bash -c "apt-get update; apt-get -y install p7zip-full gdal-bin"
-docker exec -ti lucas-postgis bash /opt/utils/extract_lucas_points.sh 2018
+docker exec lucas-postgis bash -c "apt-get update; apt-get -y install p7zip-full gdal-bin"
+docker exec lucas-postgis bash /opt/utils/restore_from_dump.sh
+```
+
+Extract LUCAS points for a specifed year:
+
+```
+docker exec lucas-postgis python3 /opt/utils/extract_lucas_points.py \
+ --dst_dir /data/lucas_points \
+ --year 2018
+```
+
+Stop and remove PostGIS DB:
+
+```
 docker stop lucas-postgis
 docker rm lucas-postgis
 ```
 
 Exported LUCAS points are stored in `data/lucas_points`.
 
-Download OSM/CLCplus product:
+Download OSM/CLCplus product for a specifed year:
 
 ```
 docker run --rm --user `id -u` \
  -v `pwd`:/opt -v ./data:/data \
  lucas_representativeness:latest \
  python3 /opt/utils/download_osm_clcplus.py \
- --dst_dir /data/osm_clcplus/2018/
+ --dst_dir /data/osm_clcplus \
+ --year 2018
 ```
 
 ### Perform RG area computation
 
 ```
-./utils/run_docker.sh ./data
+./utils/run_docker.sh ./data 2018 1
 ```
+
+- The first argument (`./data`) specifies the path to the data directory.
+- The second argument (`1`) specifies the product version number.
 
 The calculation is applied on a country-by-country basis. For each
 OSM/CLCplus tile an output GeoPackage is created (in

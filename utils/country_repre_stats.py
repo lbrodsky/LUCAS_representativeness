@@ -20,9 +20,10 @@ def main(data_dir, version, products):
                                'RG', 'RG_pct', 'No_match', 'No_match_pct',
                                'Multiclass', 'Multiclass_pct',
                                'Geom_update', 'Geom_update_pct', 'Sim_1', 'Sim_1_pct'])
-
-    for cntr in sorted(country_codes.keys()):
-        cntr_code = country_codes[cntr]
+    year = int(data_dir.parent.name)
+    country_codes_year = country_codes(year)
+    for cntr in sorted(country_codes_year.keys()):
+        cntr_code = country_codes_year[cntr]
         # original points
         cntr_fn = os.path.join(data_dir, f'{cntr}_lucas_representativeness.gpkg')
         df_original_points = gpd.read_file(cntr_fn, layer=f'{cntr_code}_lucas_original_points')
@@ -91,4 +92,4 @@ if __name__ == "__main__":
     for fn in Path(args.data_dir).glob('log_merge_countries_v*.txt'):
         version = fn.stem.split('_')[-1].lstrip('v')
 
-    main(args.data_dir, version, ['*_lucas_representativess.gpkg'])
+    main(Path(args.data_dir), version, ['*_lucas_representativess.gpkg'])
