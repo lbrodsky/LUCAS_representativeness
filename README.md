@@ -102,7 +102,7 @@ docker run --rm --user `id -u` \
 ### Perform RG area computation
 
 ```
-./utils/run_docker.sh ./data 1
+./utils/run_docker.sh ./data 2018 1
 ```
 
 - The first argument (`./data`) specifies the path to the data directory.
